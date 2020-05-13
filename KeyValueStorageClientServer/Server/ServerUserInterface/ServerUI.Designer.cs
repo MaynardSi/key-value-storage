@@ -31,6 +31,7 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.ipAddressTextBox = new System.Windows.Forms.TextBox();
+            this.startServerToggleButton = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.portTextBox = new System.Windows.Forms.TextBox();
             this.pingButton = new System.Windows.Forms.Button();
@@ -38,7 +39,6 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.logRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.startServerToggleButton = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -90,6 +90,20 @@
             this.ipAddressTextBox.Size = new System.Drawing.Size(135, 20);
             this.ipAddressTextBox.TabIndex = 17;
             this.ipAddressTextBox.Text = "127.0.0.1";
+            // 
+            // startServerToggleButton
+            // 
+            this.startServerToggleButton.Appearance = System.Windows.Forms.Appearance.Button;
+            this.startServerToggleButton.AutoSize = true;
+            this.startServerToggleButton.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.startServerToggleButton.Location = new System.Drawing.Point(144, 3);
+            this.startServerToggleButton.Name = "startServerToggleButton";
+            this.startServerToggleButton.Size = new System.Drawing.Size(89, 22);
+            this.startServerToggleButton.TabIndex = 18;
+            this.startServerToggleButton.Text = "Start";
+            this.startServerToggleButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.startServerToggleButton.UseVisualStyleBackColor = true;
+            this.startServerToggleButton.CheckedChanged += new System.EventHandler(this.startServerToggleButton_CheckedChanged);
             // 
             // tableLayoutPanel2
             // 
@@ -167,20 +181,6 @@
             this.logRichTextBox.Size = new System.Drawing.Size(230, 265);
             this.logRichTextBox.TabIndex = 5;
             this.logRichTextBox.Text = "";
-            // 
-            // startServerToggleButton
-            // 
-            this.startServerToggleButton.Appearance = System.Windows.Forms.Appearance.Button;
-            this.startServerToggleButton.AutoSize = true;
-            this.startServerToggleButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.startServerToggleButton.Location = new System.Drawing.Point(144, 3);
-            this.startServerToggleButton.Name = "startServerToggleButton";
-            this.startServerToggleButton.Size = new System.Drawing.Size(89, 22);
-            this.startServerToggleButton.TabIndex = 18;
-            this.startServerToggleButton.Text = "Start";
-            this.startServerToggleButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.startServerToggleButton.UseVisualStyleBackColor = true;
-            this.startServerToggleButton.CheckedChanged += new System.EventHandler(this.startServerToggleButton_CheckedChanged);
             // 
             // ServerUI
             // 

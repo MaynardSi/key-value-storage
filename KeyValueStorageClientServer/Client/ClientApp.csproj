@@ -46,8 +46,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClientController.cs" />
-    <Compile Include="ClientSocket.cs" />
+    <Compile Include="ClientSocket\ClientSocket - Copy.cs" />
+    <Compile Include="ClientSocket\ClientSocket.cs" />
+    <Compile Include="ClientSocket\StateObject.cs" />
+    <Compile Include="ClientUIPresenter.cs" />
+    <Compile Include="ClientStatus.cs" />
     <Compile Include="ClientUserInterface\ClientUI.cs">
       <SubType>Form</SubType>
     </Compile>

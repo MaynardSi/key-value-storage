@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Client.ClientSocket;
+using System;
 using System.Windows.Forms;
 
 namespace ClientApp
@@ -13,7 +14,11 @@ namespace ClientApp
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new ClientUI());
+
+            var mainForm = new ClientUI();
+            var presenter = new ClientUIPresenter(mainForm, new ClientSocket());
+
+            Application.Run(mainForm);
         }
     }
 }

@@ -4,12 +4,12 @@ public class KeyValuePairRepository
 {
     public KeyValuePairRepository()
     {
-        this.KeyValuePairs = new Dictionary<object, object>();
+        this.KeyValuePairs = new Dictionary<string, string>();
     }
 
-    public Dictionary<object, object> KeyValuePairs { get; set; }
+    public Dictionary<string, string> KeyValuePairs { get; set; }
 
-    public void AddKeyValuePair(object key, object value)
+    public void AddKeyValuePair(string key, string value)
     {
         this.KeyValuePairs.Add(key, value);
     }

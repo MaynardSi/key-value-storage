@@ -11,42 +11,40 @@ namespace ServerApp
             InitializeComponent();
         }
 
-        public event EventHandler StartServer;
+        public string IpAddress { get { return ipAddressTextBox.Text as string; } }
+        public string PortNumber { get { return portTextBox.Text as string; } }
 
-        public event EventHandler StopServer;
+        public event EventHandler ServerStarting;
 
-        public event EventHandler SendPing;
-
-        public string IpAddress
-        {
-            get { return ipAddressTextBox.Text as string; }
-        }
-
-        public string PortNumber
-        {
-            get { return portTextBox.Text as string; }
-        }
+        public event EventHandler ServerEnding;
 
         public void UpdateLog(string message)
         {
             // Thread safety implementation
             // https://stackoverflow.com/questions/142003/cross-thread-operation-not-valid-control-accessed-from-a-thread-other-than-the
-            MethodInvoker action = delegate { logRichTextBox.Text += $"{ message } \n"; };
-            logRichTextBox.BeginInvoke(action);
+            if (logRichTextBox.InvokeRequired)
+            {
+                MethodInvoker action = delegate { logRichTextBox.Text += $"{ message } \n"; logRichTextBox.Refresh(); };
+                logRichTextBox.BeginInvoke(action);
+            }
+            else
+            {
+                logRichTextBox.Text += $"{ message } \n";
+                logRichTextBox.Refresh();
+            }
         }
 
         private void startServerToggleButton_CheckedChanged(object sender, EventArgs e)
         {
             if (startServerToggleButton.Checked)
             {
-                StartServer?.Invoke(sender, e);
+                ServerStarting?.Invoke(sender, e);
                 startServerToggleButton.Text = "Stop";
-                // TODO Check if client connected
-                // pingButton.Enabled = true;
+                pingButton.Enabled = true;
             }
             else
             {
-                StopServer?.Invoke(sender, e);
+                ServerEnding?.Invoke(sender, e);
                 startServerToggleButton.Text = "Start";
                 pingButton.Enabled = false;
             }

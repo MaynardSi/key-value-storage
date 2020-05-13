@@ -6,21 +6,21 @@ namespace Client
     {
         //TODO: Finish client view abstraction
 
-        event EventHandler NewConnection;
+        event EventHandler EstablishConnection;
 
-        event EventHandler SendPing;
+        event EventHandler DisconnectClient;
 
-        event EventHandler AddKeyValuePair;
+        string IpAddress { get; }
+        string PortNumber { get; }
+        string AddKeyInput { get; }
+        string AddValueInput { get; }
 
-        event EventHandler UpdateKeyValuePairList;
+        void UpdateLog(string message);
 
-        event EventHandler SearchKeyValue;
+        void UpdateKeyValuePairLog(string message);
 
-        string hostIP { get; set; }
-        string portNumber { get; set; }
-        string addKeyInput { get; set; }
-        string addValueInput { get; set; }
+        void UpdateKeySearchResultLog(string message);
 
-        void AppendLogMessage(string message);
+        void ClientStatusFormUpdate(ClientStatus status);
     }
 }

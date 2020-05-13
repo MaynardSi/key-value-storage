@@ -30,15 +30,15 @@
         {
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.sendPingButton = new System.Windows.Forms.Button();
+            this.pingButton = new System.Windows.Forms.Button();
             this.logRichTextBox = new System.Windows.Forms.RichTextBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.keyValuePairListBox = new System.Windows.Forms.ListBox();
             this.label6 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.connectToggleButton = new System.Windows.Forms.CheckBox();
             this.ipAddressTextBox = new System.Windows.Forms.TextBox();
-            this.connectToggleButton = new System.Windows.Forms.Button();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.portTextBox = new System.Windows.Forms.TextBox();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
@@ -85,16 +85,17 @@
             this.label2.TabIndex = 2;
             this.label2.Text = "Port:";
             // 
-            // sendPingButton
+            // pingButton
             // 
-            this.sendPingButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.sendPingButton.Enabled = false;
-            this.sendPingButton.Location = new System.Drawing.Point(144, 3);
-            this.sendPingButton.Name = "sendPingButton";
-            this.sendPingButton.Size = new System.Drawing.Size(89, 22);
-            this.sendPingButton.TabIndex = 4;
-            this.sendPingButton.Text = "Send Ping";
-            this.sendPingButton.UseVisualStyleBackColor = true;
+            this.pingButton.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pingButton.Enabled = false;
+            this.pingButton.Location = new System.Drawing.Point(144, 3);
+            this.pingButton.Name = "pingButton";
+            this.pingButton.Size = new System.Drawing.Size(89, 22);
+            this.pingButton.TabIndex = 4;
+            this.pingButton.Text = "Send Ping";
+            this.pingButton.UseVisualStyleBackColor = true;
+            this.pingButton.Click += new System.EventHandler(this.pingButton_Click);
             // 
             // logRichTextBox
             // 
@@ -150,8 +151,8 @@
             this.tableLayoutPanel6.ColumnCount = 2;
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.tableLayoutPanel6.Controls.Add(this.connectToggleButton, 0, 0);
             this.tableLayoutPanel6.Controls.Add(this.ipAddressTextBox, 0, 0);
-            this.tableLayoutPanel6.Controls.Add(this.connectToggleButton, 1, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel6.Location = new System.Drawing.Point(50, 0);
             this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(0);
@@ -162,6 +163,20 @@
             this.tableLayoutPanel6.Size = new System.Drawing.Size(236, 28);
             this.tableLayoutPanel6.TabIndex = 17;
             // 
+            // connectToggleButton
+            // 
+            this.connectToggleButton.Appearance = System.Windows.Forms.Appearance.Button;
+            this.connectToggleButton.AutoSize = true;
+            this.connectToggleButton.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.connectToggleButton.Location = new System.Drawing.Point(144, 3);
+            this.connectToggleButton.Name = "connectToggleButton";
+            this.connectToggleButton.Size = new System.Drawing.Size(89, 22);
+            this.connectToggleButton.TabIndex = 19;
+            this.connectToggleButton.Text = "Connect";
+            this.connectToggleButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.connectToggleButton.UseVisualStyleBackColor = true;
+            this.connectToggleButton.Click += new System.EventHandler(this.connectToggleButton_Click);
+            // 
             // ipAddressTextBox
             // 
             this.ipAddressTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -171,24 +186,13 @@
             this.ipAddressTextBox.TabIndex = 17;
             this.ipAddressTextBox.Text = "127.0.0.1";
             // 
-            // connectToggleButton
-            // 
-            this.connectToggleButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.connectToggleButton.Location = new System.Drawing.Point(144, 3);
-            this.connectToggleButton.Name = "connectToggleButton";
-            this.connectToggleButton.Size = new System.Drawing.Size(89, 22);
-            this.connectToggleButton.TabIndex = 4;
-            this.connectToggleButton.Text = "Connect";
-            this.connectToggleButton.UseVisualStyleBackColor = true;
-            this.connectToggleButton.Click += new System.EventHandler(this.connectToggleButton_Click);
-            // 
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 2;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
             this.tableLayoutPanel2.Controls.Add(this.portTextBox, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.sendPingButton, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.pingButton, 1, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(50, 28);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
@@ -206,7 +210,7 @@
             this.portTextBox.Name = "portTextBox";
             this.portTextBox.Size = new System.Drawing.Size(135, 20);
             this.portTextBox.TabIndex = 17;
-            this.portTextBox.Text = "500";
+            this.portTextBox.Text = "13000";
             // 
             // tableLayoutPanel3
             // 
@@ -431,7 +435,7 @@
 
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Button sendPingButton;
+        private System.Windows.Forms.Button pingButton;
         private System.Windows.Forms.RichTextBox logRichTextBox;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private System.Windows.Forms.ListBox keyValuePairListBox;
@@ -442,7 +446,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel6;
         private System.Windows.Forms.TextBox ipAddressTextBox;
-        private System.Windows.Forms.Button connectToggleButton;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.Button getAllValuesButton;
         private System.Windows.Forms.Label label7;
@@ -457,6 +460,7 @@
         private System.Windows.Forms.TextBox keySearchTextBox;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox addValueTextBox;
+        private System.Windows.Forms.CheckBox connectToggleButton;
     }
 }
 
