@@ -1,20 +1,46 @@
-﻿using System;
+﻿using Common;
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static Common.RequestResponseEnum;
 
 namespace Server.ServerSocket
 {
+    /// <summary>
+    /// Application logic of the Server Application
+    /// </summary>
     /// Socket programming references:
     /// TcpListener/TcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener?redirectedfrom=MSDN&view=netcore-3.1
     /// Asynchronous: https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-server-socket-example
     /// Multithreaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
     /// TcpListener.BeginAcceptTcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener.beginaccepttcpclient?view=netframework-4.8
+    /// async programming tcp: https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-asynchronous-tcp-sockets-as-an-alternative-to-wcf
     public class ServerSocket
     {
+        #region Constants
+
         private const int TIMEOUT = 5000;
+
+        #endregion Constants
+
+        #region Fields
+
+        public TcpListener Server;
+        public bool IsStarted = false;
+
+        private CancellationTokenSource cancellationTokenSource;
+        private CancellationToken cancellationToken;
+
+        private KeyValuePairRepository repository = new KeyValuePairRepository();
+
+        #endregion Fields
+
+        #region Events
 
         public event EventHandler ServerStarted;
 
@@ -22,193 +48,256 @@ namespace Server.ServerSocket
 
         public event EventHandler WaitingClient;
 
-        public event EventHandler ClientConnected;
+        public event EventHandler<string> ClientConnected;
+
+        public event EventHandler<string> ClientDisconnected;
 
         public event EventHandler<string> MessageReceived;
 
         public event EventHandler<string> MessageSent;
 
-        private TcpListener server = null;
+        #endregion Events
 
-        private CancellationTokenSource cancellationTokenSource;
-        private CancellationToken cancellationToken;
-
-        // Thread signal.
-        public static ManualResetEvent tcpClientConnected = new ManualResetEvent(false);
+        #region Methods
 
         /// <summary>
-        /// Start the server from the UI thread.
+        /// Create and start an instance of a TcpListener
         /// </summary>
         /// <param name="ipAddress"></param>
         /// <param name="port"></param>
-        public async Task StartServerAsync(string ipAddressString, string portString)
+        public async Task StartServer(string ipAddressString, string portString)
         {
             // Check if TcpListener exists to avoid socket error
-            if (server == null)
+            if (!IsStarted)
             {
                 // Create a TCP/Ip Socket (TcpListener)
-                server = new TcpListener(IPAddress.Parse(ipAddressString), int.Parse(portString));
+                Server = new TcpListener(IPAddress.Parse(ipAddressString), int.Parse(portString));
+                // Set the cancellation token.
                 cancellationTokenSource = new CancellationTokenSource();
                 cancellationToken = cancellationTokenSource.Token;
-                server.Start();
+                // Start the server.
+                Server.Start();
+                IsStarted = true;
+                // Notify UI that server has started.
                 OnServerStarted();
             }
-            try
+
+            if (IsStarted)
             {
-                await Task.Run(() =>
-                    {
-                        if (server != null)
-                            DoBeginAcceptTcpClient(server);
-                    }, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        /*
-         * DoBeginAcceptClient -> DoAcceptTcpClientCallback -> ReadCallback
-         * -> Send -> SendCallback
-         */
-
-        // TODO: I still might have problems in making the connection persistent
-
-        // Wait and Accept one client connection asynchronously.
-        private void DoBeginAcceptTcpClient(TcpListener listener)
-        {
-            // Set the event to nonsignaled state (Reset).
-            // So that threads once again block, when they call WaitOne()
-            tcpClientConnected.Reset();
-
-            // Start to listen for connections from a client.
-            // Signal subscribers that client is waiting
-            OnWaitingClient();
-
-            // Accept the connection.
-            // BeginAcceptSocket() creates the accepted socket.
-            listener.BeginAcceptTcpClient(new AsyncCallback(DoAcceptTcpClientCallback), listener);
-
-            // Wait until a connection is made and processed before continuing.
-            tcpClientConnected.WaitOne();
-        }
-
-        private void DoAcceptTcpClientCallback(IAsyncResult ar)
-        {
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                // Get the listener that handles the client request.
-                TcpListener listener = (TcpListener)ar.AsyncState;
-                TcpClient client = listener.EndAcceptTcpClient(ar);
-
-                // Signal subscribers that client is connected
-                OnClientConnected();
-
-                // TODO: Using new tcpclient Process the connection here. (Add the client to aserver table, read data, etc.)
-                // Read call back using state
-                // Create the state object
-                StateObject state = new StateObject
+                try
                 {
-                    workSocket = client
-                };
-
-                // TODO: Persistent read method
-                // Uses the GetStream public method to return the NetworkStream.
-                client.GetStream().BeginRead(state.buffer, 0, StateObject.BufferSize,
-                    new AsyncCallback(ReceiveCallback), state);
-
-                // Signal the main thread to continue (Set).
-                // Threads that call WaitOne() do not block when Set.
-                tcpClientConnected.Set();
-            }
-        }
-
-        private void ReceiveCallback(IAsyncResult ar)
-        {
-            String content = String.Empty;
-
-            try
-            {
-                // Retrieve the state object and the handler socket
-                // from the asynchronous state object.
-                StateObject state = (StateObject)ar.AsyncState;
-                TcpClient client = state.workSocket;
-
-                if (client.GetStream().CanRead)
-                {
-                    // Read data from the client socket.
-                    int noOfBytesRead = client.GetStream().EndRead(ar);
-                    state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, noOfBytesRead));
-                    content = state.sb.ToString();
-                    while (client.GetStream().DataAvailable)
-                    {
-                        client.GetStream().BeginRead(state.buffer, 0, StateObject.BufferSize,
-                            new AsyncCallback(ReceiveCallback), state);
-                    }
+                    // Notify UI that Server is waiting for a client.
+                    OnWaitingClient();
+                    // Start accepting client.
+                    cancellationToken.ThrowIfCancellationRequested();
+                    TcpClient client = await Server.AcceptTcpClientAsync();
+                    // Notify UI that a client has connected.
+                    string clientEndPoint = client.Client.RemoteEndPoint.ToString();
+                    OnClientConnected(clientEndPoint);
+                    // Start receiving client request and generate response.
+                    Task t = _process(client, clientEndPoint, ipAddressString, portString);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await t;
                 }
-                // All the data has been read from the client. Display it on the console.
-                OnMessageReceived($"Read {content.Length} bytes from socket. \n Data : {content}");
-                // TODO Process string method and take command
-                // Echo the data back to the client.
-                Send(client, content);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
         }
 
-        private void Send(TcpClient client, String data)
-        {
-            // Convert the string data to byte data using ASCII encoding.
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-            // Begin sending the data to the remote device.
-            client.GetStream().BeginWrite(byteData, 0, byteData.Length,
-                new AsyncCallback(SendCallback), client);
-        }
-
-        private void SendCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.
-                TcpClient client = (TcpClient)ar.AsyncState;
-
-                // Complete sending the data to the remote device.
-                client.GetStream().EndWrite(ar);
-                OnMessageSent($"Sent bytes to client.");
-
-                //TODO: client.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
+        /// <summary>
+        /// Stops the TcpListener instance and resets it to the original state.
+        /// </summary>
         public void StopServer()
         {
             // cancellation token to cancel start server task
             // tasks: https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx
             // CancellationToken: https://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx
-            if (cancellationTokenSource != null)
-            {
-                cancellationTokenSource.Cancel();
-            }
-            if (server != null)
+            cancellationTokenSource?.Cancel();
+            if (IsStarted)
             {
                 try
                 {
-                    server.Stop();
+                    Server.Stop();
+                    IsStarted = false;
                     OnServerStopped();
                 }
-                catch (SocketException se)
+                catch (Exception e)
                 {
-                    Console.WriteLine("SocketException: {0}", se);
+                    Console.WriteLine("Exception: {0}", e);
                 }
             }
         }
+
+        /// <summary>
+        /// Gives the appropriate response to a client request.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        private async Task _process(TcpClient client, string clientEndPoint, string ipAddressString, string portString)
+        {
+            try
+            {
+                NetworkStream networkStream = client.GetStream();
+                StreamReader reader = new StreamReader(networkStream);
+                StreamWriter writer = new StreamWriter(networkStream);
+
+                // Flush its buffer to the underlying stream after every
+                // call to StreamWriter.Write.
+                writer.AutoFlush = true;
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    string request = await reader.ReadLineAsync();
+                    if (request != null)
+                    {
+                        // Notify UI that request has been received.
+                        Request deserializedRequest = JsonConvert.DeserializeObject<Request>(request);
+                        OnMessageReceived($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
+
+                        // Parse and process client request.
+                        string response = _processClientRequest(deserializedRequest);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        await writer.WriteLineAsync(response);
+
+                        // Notify UI that response has been sent.
+                        Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
+                        OnMessageSent($"\n\t{deserializedResponse.MessageType} : {deserializedResponse.Message}");
+                    }
+                    else
+                    {
+                        clientEndPoint = clientEndPoint ?? "No client found";
+                        OnClientDisconnected(clientEndPoint); // Notify UI Client Disconnected.
+                        await this.StartServer(ipAddressString, portString); // Seems like a bad idea
+                        break; // Client has closed the connection or network stream unavailable.
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                if (client.Connected)
+                {
+                    client.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Processes a clients request and generates a response string based on the request type.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private string _processClientRequest(Request request)
+        {
+            string response;
+
+            switch (request.RequestType)
+            {
+                case RequestResponseTypes.GET:
+                    // Return KVP string
+                    response = _createResponse(request.RequestType, _processClientGET(request.Message));
+                    break;
+
+                case RequestResponseTypes.GETALL:
+                    // Return KVP string
+                    response = _createResponse(request.RequestType, _processClientGETALL(request.Message));
+                    break;
+
+                case RequestResponseTypes.SET:
+                    // Store KVP in repository and return OK
+                    response = _createResponse(request.RequestType, _processClientSET(request.Message));
+                    break;
+
+                case RequestResponseTypes.PING:
+                    // Return a response of PONG
+                    response = _createResponse(request.RequestType, _processClientPING(request.Message));
+                    break;
+
+                default:
+                    // Unknown response type
+                    response = "Request Error";
+                    break;
+            }
+            return response;
+        }
+
+        /// <summary>
+        /// Returns the value of and item in the repository given a queried key from a request.
+        /// </summary>
+        /// <param name="keyFromMessage"></param>
+        /// <returns></returns>
+        private string _processClientGET(string keyFromMessage)
+        {
+            if (repository.KeyValuePairs.TryGetValue(keyFromMessage, out string result))
+            {
+                return $"{result}";
+            }
+            return $"ERROR NOT FOUND";
+        }
+
+        /// <summary>
+        /// Returns the list of items in the repository.
+        /// </summary>
+        /// <param name="keyFromMessage"></param>
+        /// <returns></returns>
+        private string _processClientGETALL(string keyFromMessage)
+        {
+            if (repository.KeyValuePairs.Count > 0)
+            {
+                string lines = string.Join(Environment.NewLine,
+                    repository.KeyValuePairs.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
+                return lines;
+            }
+
+            return $"ERROR NOT FOUND";
+        }
+
+        /// <summary>
+        /// Adds a Key Value Pair to the repository from a given request.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        private string _processClientSET(string message)
+        {
+            string[] keyValuePair = message.Split(',');
+            string key = keyValuePair[0];
+            string value = keyValuePair[1];
+            if (!repository.KeyValuePairs.ContainsKey(key))
+            {
+                repository.KeyValuePairs.Add(key, value);
+                return $"OK: {key}, {value} ADDED ";
+            }
+            return $"ERROR NOT ADDED";
+        }
+
+        /// <summary>
+        /// Returns "PONG" as a response to the request PING.
+        /// </summary>
+        /// <param name="keyFromMessage"></param>
+        /// <returns></returns>
+        private string _processClientPING(string keyFromMessage)
+        {
+            return "PONG";
+        }
+
+        /// <summary>
+        /// Returns a JSON string built from the serialized Response class and process response.
+        /// </summary>
+        /// <param name="requestType"></param>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        private static string _createResponse(RequestResponseTypes requestType, string response)
+        {
+            Response responseObj = new Response(requestType, response);
+            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
+            return jsonString;
+        }
+
+        #endregion Methods
+
+        #region EventsHandlers
 
         protected virtual void OnServerStarted()
         {
@@ -225,9 +314,14 @@ namespace Server.ServerSocket
             WaitingClient?.Invoke(this, EventArgs.Empty);
         }
 
-        protected virtual void OnClientConnected()
+        protected virtual void OnClientConnected(string clientInfo)
         {
-            ClientConnected?.Invoke(this, EventArgs.Empty);
+            ClientConnected?.Invoke(this, clientInfo);
+        }
+
+        protected virtual void OnClientDisconnected(string clientInfo)
+        {
+            ClientDisconnected?.Invoke(this, clientInfo);
         }
 
         protected virtual void OnMessageReceived(string data)
@@ -239,5 +333,7 @@ namespace Server.ServerSocket
         {
             MessageSent?.Invoke(this, data);
         }
+
+        #endregion EventsHandlers
     }
 }

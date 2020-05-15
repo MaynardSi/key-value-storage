@@ -4,6 +4,9 @@ using System.Windows.Forms;
 
 namespace ServerApp
 {
+    /// <summary>
+    /// Main Server Program.
+    /// </summary>
     internal static class Program
     {
         /// <summary>

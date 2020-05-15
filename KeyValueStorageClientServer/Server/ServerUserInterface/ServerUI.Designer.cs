@@ -34,7 +34,7 @@
             this.startServerToggleButton = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.portTextBox = new System.Windows.Forms.TextBox();
-            this.pingButton = new System.Windows.Forms.Button();
+            this.clearButton = new System.Windows.Forms.Button();
             this.label6 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
@@ -111,7 +111,7 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
             this.tableLayoutPanel2.Controls.Add(this.portTextBox, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.pingButton, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.clearButton, 1, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(50, 28);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
@@ -131,17 +131,17 @@
             this.portTextBox.TabIndex = 17;
             this.portTextBox.Text = "13000";
             // 
-            // pingButton
+            // clearButton
             // 
-            this.pingButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pingButton.Enabled = false;
-            this.pingButton.Location = new System.Drawing.Point(144, 3);
-            this.pingButton.Name = "pingButton";
-            this.pingButton.Size = new System.Drawing.Size(89, 22);
-            this.pingButton.TabIndex = 4;
-            this.pingButton.Text = "Send Ping";
-            this.pingButton.UseVisualStyleBackColor = true;
-            this.pingButton.Click += new System.EventHandler(this.pingButton_Click);
+            this.clearButton.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.clearButton.Enabled = false;
+            this.clearButton.Location = new System.Drawing.Point(144, 3);
+            this.clearButton.Name = "clearButton";
+            this.clearButton.Size = new System.Drawing.Size(89, 22);
+            this.clearButton.TabIndex = 4;
+            this.clearButton.Text = "Clear";
+            this.clearButton.UseVisualStyleBackColor = true;
+            this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
             // label6
             // 
@@ -207,7 +207,7 @@
         private System.Windows.Forms.TextBox ipAddressTextBox;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.TextBox portTextBox;
-        private System.Windows.Forms.Button pingButton;
+        private System.Windows.Forms.Button clearButton;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;

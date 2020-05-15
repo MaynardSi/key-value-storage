@@ -4,6 +4,9 @@ using System.Windows.Forms;
 
 namespace ClientApp
 {
+    /// <summary>
+    /// Main Client Program.
+    /// </summary>
     internal static class Program
     {
         /// <summary>

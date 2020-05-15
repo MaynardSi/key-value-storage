@@ -7,7 +7,7 @@ namespace Server.ServerSocket
     /// State object for reading client data asynchronously
     /// https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-server-socket-example
     /// </summary>
-    internal class StateObject
+    public class StateObject
     {
         // Client  socket.
         public TcpClient workSocket = null;

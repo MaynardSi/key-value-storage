@@ -6,48 +6,84 @@ namespace ClientApp
 {
     public partial class ClientUI : Form, IClientFormView
     {
+        #region Constructor
+
         public ClientUI()
         {
             InitializeComponent();
         }
 
+        #endregion Constructor
+
+        #region Properties
+
         public string IpAddress { get { return ipAddressTextBox.Text as string; } }
         public string PortNumber { get { return portTextBox.Text as string; } }
-        public string AddKeyInput { get { return addKeyTextBox.Text as string; } }
-        public string AddValueInput { get { return addValueTextBox.Text as string; } }
+
+        #endregion Properties
+
+        #region Events
 
         public event EventHandler EstablishConnection;
 
         public event EventHandler DisconnectClient;
 
+        public event EventHandler SendPing;
+
+        public event EventHandler<(string key, string value)> AddKeyValuePair;
+
+        public event EventHandler<string> SearchKeyValuePair;
+
+        public event EventHandler ListKeyValuePairs;
+
+        #endregion Events
+
+        #region Methods
+
+        /// <summary>
+        /// Appends the message to the Client log.
+        /// </summary>
+        /// <param name="message"></param>
         public void UpdateLog(string message)
         {
-            // Thread safety implementation
-            // https://stackoverflow.com/questions/142003/cross-thread-operation-not-valid-control-accessed-from-a-thread-other-than-the
-            if (logRichTextBox.InvokeRequired)
-            {
-                MethodInvoker action = delegate { logRichTextBox.Text += $"{ message } \n"; logRichTextBox.Refresh(); };
-                logRichTextBox.BeginInvoke(action);
-            }
-            else
+            InvokeUI(() =>
             {
                 logRichTextBox.Text += $"{ message } \n";
                 logRichTextBox.Refresh();
-            }
+            });
         }
 
-        public void UpdateKeyValuePairLog(string message)
+        /// <summary>
+        /// Appends the Key Value Pair string List message to the List Log
+        /// </summary>
+        /// <param name="message"></param>
+        public void UpdateKeyValueListLog(string message)
         {
-            //TODO Fetch KVP list from server -> repository
-            MethodInvoker action = delegate { keyValuePairListBox.Text += $"{ message } \n"; };
-            logRichTextBox.BeginInvoke(action);
+            InvokeUI(() =>
+            {
+                keyValuePairListBox.Text += $"{ message } \n";
+                keyValuePairListBox.Refresh();
+            });
         }
 
+        /// <summary>
+        /// Displays the search result to the search result log
+        /// </summary>
+        /// <param name="message"></param>
         public void UpdateKeySearchResultLog(string message)
         {
-            //TODO Fetch KVP from server -> repository
+            InvokeUI(() =>
+            {
+                keySearchResultRichTextBox.Text = String.Empty;
+                keySearchResultRichTextBox.Text = $"{ message } \n";
+                keySearchResultRichTextBox.Refresh();
+            });
         }
 
+        /// <summary>
+        /// Updates UI form based on the client status.
+        /// </summary>
+        /// <param name="status"></param>
         public void ClientStatusFormUpdate(ClientStatus status)
         {
             switch (status)
@@ -69,77 +105,80 @@ namespace ClientApp
             }
         }
 
+        /// <summary>
+        /// If the client is connected, Enable form buttons.
+        /// </summary>
         private void ClientConnectedFormUpdate()
         {
-            if (InvokeRequired)
-            {
-                this.BeginInvoke(new MethodInvoker(delegate
-                {
-                    connectToggleButton.Enabled = true;
-                    connectToggleButton.Checked = true;
-                    connectToggleButton.Text = "Disconnect";
-                    pingButton.Enabled = true;
-                }));
-            }
-            else
+            InvokeUI(() =>
             {
                 connectToggleButton.Enabled = true;
                 connectToggleButton.Checked = true;
                 connectToggleButton.Text = "Disconnect";
                 pingButton.Enabled = true;
-            }
+                addKeyValuePairButton.Enabled = true;
+                keySearchButton.Enabled = true;
+                getAllValuesButton.Enabled = true;
+            });
         }
 
+        /// <summary>
+        /// If the client is disconnected, disable form buttons.
+        /// </summary>
         private void ClientDisconnectedFormUpdate()
         {
             ClientFormReset();
         }
 
+        /// <summary>
+        /// If the client has timed out, disable form buttons.
+        /// </summary>
         private void ClientTimeoutFormUpdate()
         {
             ClientFormReset();
         }
 
+        /// <summary>
+        /// Resets the form buttons back to its original state
+        /// </summary>
         private void ClientFormReset()
         {
-            if (InvokeRequired)
-            {
-                this.BeginInvoke(new MethodInvoker(delegate
-                {
-                    connectToggleButton.Enabled = true;
-                    connectToggleButton.Checked = false;
-                    connectToggleButton.Text = "Connect";
-                    pingButton.Enabled = false;
-                }));
-            }
-            else
+            InvokeUI(() =>
             {
                 connectToggleButton.Enabled = true;
                 connectToggleButton.Checked = false;
                 connectToggleButton.Text = "Connect";
                 pingButton.Enabled = false;
-            }
+                addKeyValuePairButton.Enabled = false;
+                keySearchButton.Enabled = false;
+                getAllValuesButton.Enabled = false;
+            });
         }
 
+        /// <summary>
+        /// Thread safety implementation.
+        /// https://stackoverflow.com/questions/142003/cross-thread-operation-not-valid-control-accessed-from-a-thread-other-than-the
+        /// </summary>
+        /// <param name="action"></param>
+        private void InvokeUI(Action action)
+        {
+            this.Invoke(action);
+        }
+
+        #endregion Methods
+
+        #region Button events
+
+        /// <summary>
+        /// Button event that enables/disables the client.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void connectToggleButton_Click(object sender, EventArgs e)
         {
-            if (InvokeRequired)
-            {
-                this.BeginInvoke(new MethodInvoker(delegate
-                {
-                    if (connectToggleButton.Checked)
-                    {
-                        connectToggleButton.Enabled = false;
-                        EstablishConnection?.Invoke(sender, e);
-                    }
-                    else
-                    {
-                        connectToggleButton.Enabled = false;
-                        DisconnectClient?.Invoke(sender, e);
-                    }
-                }));
-            }
-            else
+            string ipAddress = ipAddressTextBox.Text;
+            string port = portTextBox.Text;
+            InvokeUI(() =>
             {
                 if (connectToggleButton.Checked)
                 {
@@ -151,16 +190,52 @@ namespace ClientApp
                     connectToggleButton.Enabled = false;
                     DisconnectClient?.Invoke(sender, e);
                 }
-            }
+            });
         }
 
+        /// <summary>
+        /// Button event for sending a GET request to the server.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void keySearchButton_Click(object sender, EventArgs e)
+        {
+            string searchkey = keySearchTextBox.Text;
+            SearchKeyValuePair?.Invoke(sender, searchkey);
+        }
+
+        /// <summary>
+        /// Button event for sending a SET request to the server.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void addKeyValuePairButton_Click(object sender, EventArgs e)
+        {
+            string addkey = addKeyTextBox.Text;
+            string addValue = addValueTextBox.Text;
+            AddKeyValuePair?.Invoke(sender, (addkey, addValue));
+        }
+
+        /// <summary>
+        /// Button event for sending a GETALL request to the server.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getAllValuesButton_Click(object sender, EventArgs e)
+        {
+            ListKeyValuePairs?.Invoke(sender, e);
+        }
+
+        /// <summary>
+        /// Button event for sending a PING request to the server.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void pingButton_Click(object sender, EventArgs e)
         {
+            SendPing?.Invoke(sender, e);
         }
 
-        private void InvokeUI(Action action)
-        {
-            this.Invoke(action);
-        }
+        #endregion Button events
     }
 }

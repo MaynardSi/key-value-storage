@@ -33,7 +33,6 @@
             this.pingButton = new System.Windows.Forms.Button();
             this.logRichTextBox = new System.Windows.Forms.RichTextBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.keyValuePairListBox = new System.Windows.Forms.ListBox();
             this.label6 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
@@ -56,6 +55,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.addKeyTextBox = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.keyValuePairListBox = new System.Windows.Forms.RichTextBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -105,15 +105,6 @@
             this.logRichTextBox.Size = new System.Drawing.Size(230, 265);
             this.logRichTextBox.TabIndex = 5;
             this.logRichTextBox.Text = "";
-            // 
-            // keyValuePairListBox
-            // 
-            this.keyValuePairListBox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.keyValuePairListBox.FormattingEnabled = true;
-            this.keyValuePairListBox.Location = new System.Drawing.Point(3, 59);
-            this.keyValuePairListBox.Name = "keyValuePairListBox";
-            this.keyValuePairListBox.Size = new System.Drawing.Size(283, 173);
-            this.keyValuePairListBox.TabIndex = 6;
             // 
             // label6
             // 
@@ -224,21 +215,22 @@
             this.tableLayoutPanel3.Location = new System.Drawing.Point(319, 24);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 5;
+            this.tableLayoutPanel3.RowCount = 4;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel3.Size = new System.Drawing.Size(286, 324);
             this.tableLayoutPanel3.TabIndex = 16;
             // 
             // keySearchResultRichTextBox
             // 
             this.keySearchResultRichTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.keySearchResultRichTextBox.Location = new System.Drawing.Point(3, 266);
+            this.keySearchResultRichTextBox.Location = new System.Drawing.Point(3, 187);
             this.keySearchResultRichTextBox.Name = "keySearchResultRichTextBox";
-            this.keySearchResultRichTextBox.Size = new System.Drawing.Size(283, 55);
+            this.keySearchResultRichTextBox.Size = new System.Drawing.Size(283, 134);
             this.keySearchResultRichTextBox.TabIndex = 20;
             this.keySearchResultRichTextBox.Text = "";
             // 
@@ -252,7 +244,7 @@
             this.tableLayoutPanel7.Controls.Add(this.keySearchTextBox, 0, 0);
             this.tableLayoutPanel7.Controls.Add(this.label3, 0, 0);
             this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(0, 235);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(0, 156);
             this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
             this.tableLayoutPanel7.RowCount = 1;
@@ -271,6 +263,7 @@
             this.keySearchButton.TabIndex = 13;
             this.keySearchButton.Text = "[ GET ]";
             this.keySearchButton.UseVisualStyleBackColor = true;
+            this.keySearchButton.Click += new System.EventHandler(this.keySearchButton_Click);
             // 
             // keySearchTextBox
             // 
@@ -318,6 +311,7 @@
             this.getAllValuesButton.TabIndex = 12;
             this.getAllValuesButton.Text = "Update List ( [ GET ] All )";
             this.getAllValuesButton.UseVisualStyleBackColor = true;
+            this.getAllValuesButton.Click += new System.EventHandler(this.getAllValuesButton_Click);
             // 
             // label7
             // 
@@ -363,6 +357,7 @@
             this.addKeyValuePairButton.TabIndex = 12;
             this.addKeyValuePairButton.Text = "+";
             this.addKeyValuePairButton.UseVisualStyleBackColor = true;
+            this.addKeyValuePairButton.Click += new System.EventHandler(this.addKeyValuePairButton_Click);
             // 
             // addValueTextBox
             // 
@@ -405,6 +400,15 @@
             this.label4.TabIndex = 9;
             this.label4.Text = "Key:";
             // 
+            // keyValuePairListBox
+            // 
+            this.keyValuePairListBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.keyValuePairListBox.Location = new System.Drawing.Point(3, 59);
+            this.keyValuePairListBox.Name = "keyValuePairListBox";
+            this.keyValuePairListBox.Size = new System.Drawing.Size(283, 94);
+            this.keyValuePairListBox.TabIndex = 21;
+            this.keyValuePairListBox.Text = "";
+            // 
             // ClientUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -438,7 +442,6 @@
         private System.Windows.Forms.Button pingButton;
         private System.Windows.Forms.RichTextBox logRichTextBox;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
-        private System.Windows.Forms.ListBox keyValuePairListBox;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
@@ -454,13 +457,14 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox addKeyTextBox;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.RichTextBox keySearchResultRichTextBox;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
         private System.Windows.Forms.Button keySearchButton;
         private System.Windows.Forms.TextBox keySearchTextBox;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox addValueTextBox;
         private System.Windows.Forms.CheckBox connectToggleButton;
+        private System.Windows.Forms.RichTextBox keySearchResultRichTextBox;
+        private System.Windows.Forms.RichTextBox keyValuePairListBox;
     }
 }
 

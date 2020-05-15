@@ -1,33 +1,41 @@
-﻿using Server.ServerSocket;
+﻿using Common;
+using Newtonsoft.Json;
 using System;
+using System.IO;
+using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static Common.RequestResponseEnum;
 
 namespace Client.ClientSocket
 {
+    /// <summary>
+    /// Application logic of the Server Application
+    /// </summary>
     /// Socket programming references:
     /// TcpListener/TcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient?view=netcore-3.1
     /// Asynchronous: https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-client-socket-example
     /// Multithreaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
     public class ClientSocket
     {
+        #region Constants
+
         private const int TIMEOUT = 5000;
 
-        private TcpClient client = null;
+        #endregion Constants
 
-        // ManualResetEvent instances signal completion.
+        #region Fields
 
-        private static ManualResetEvent connectDone = new ManualResetEvent(false);
-        private static ManualResetEvent sendDone = new ManualResetEvent(false);
-        private static ManualResetEvent receiveDone = new ManualResetEvent(false);
+        public TcpClient Client;
+        public bool IsStarted = false;
 
         private CancellationTokenSource cancellationTokenSource;
         private CancellationToken cancellationToken;
 
-        // The response from the remote device.
-        private static String response = String.Empty;
+        #endregion Fields
+
+        #region Events
 
         public event EventHandler ClientConnected;
 
@@ -39,212 +47,134 @@ namespace Client.ClientSocket
 
         public event EventHandler<string> MessageSent;
 
+        #endregion Events
+
+        #region Methods
+
         /// <summary>
-        /// Start the client from the UI thread
+        /// Start the client from the UI thread.
         /// </summary>
         /// <param name="ipAddress"></param>
         /// <param name="portString"></param>
         public async Task StartClientAsync(string ipAddress, string port)
         {
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationToken = cancellationTokenSource.Token;
-
-            // Create a TCP/Ip Socket (TcpLClient)
-            client = new TcpClient();
-
-            try
+            // Check if TcpClient exists to avoid socket error.
+            if (!IsStarted)
             {
-                await Task.Run(() =>
-                {
-                    while (!cancellationToken.IsCancellationRequested && client != null)
-                    {
-                        var connectResult = client.BeginConnect(ipAddress, int.Parse(port),
-                             new AsyncCallback(ConnectCallback), client);
-                        // Block until a connection is made
-                        var connectSucess = connectDone.WaitOne(TIMEOUT);
-                        if (connectSucess || client.Connected)
-                        {
-                            //TODO:
-                            //Send test data to the remote device.
-                            Send(client, "This is a test<EOF>");
-                            sendDone.WaitOne();
+                // Create a TCP/Ip Socket (TcpLClient).
+                Client = new TcpClient();
 
-                            // Receive the response from the remote device.
-                            Receive(client);
-                            receiveDone.WaitOne();
+                // Set the cancellation token.
+                cancellationTokenSource = new CancellationTokenSource();
+                cancellationToken = cancellationTokenSource.Token;
 
-                            // Write the response to the console.
-                            Console.WriteLine("Response received : {0}", response);
-
-                            // Release the socket.
-                            //client.Shutdown(SocketShutdown.Both);
-                            //client.Close();
-                        }
-                        else
-                        {
-                            // TODO: client timeout event
-                            TimeoutClient();
-                        }
-                    }
-                }, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        /*
-         * ConnectClientCallback
-         * Receive -> ReceiveCallback
-         * Send -> SendCallback
-         */
-
-        private void ConnectCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object (object ar).
-                TcpClient client = (TcpClient)ar.AsyncState;
-
-                // Complete the connection.
-                client.EndConnect(ar);
-
-                // Signal that the connection has been made.
-                connectDone.Set();
+                // Start connecting to server on IP-Port
+                cancellationToken.ThrowIfCancellationRequested();
+                await Client.ConnectAsync(IPAddress.Parse(ipAddress), Int32.Parse(port));   // Connect
+                IsStarted = true;
                 OnClientConnectSuccess();
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
         }
 
-        private void Receive(TcpClient client)
-        {
-            try
-            {
-                // Create the state object
-                StateObject state = new StateObject
-                {
-                    workSocket = client
-                };
-
-                // Begin receiving data
-                client.GetStream().BeginRead(state.buffer, 0, StateObject.BufferSize,
-                    new AsyncCallback(ReceiveCallback), state);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        private void ReceiveCallback(IAsyncResult ar)
-        {
-            String content = String.Empty;
-            try
-            {
-                // Retrieve state object and client socket
-                // from asynchronous state object ar.
-                StateObject state = (StateObject)ar.AsyncState;
-                TcpClient client = state.workSocket;
-
-                // Read data
-                if (client.GetStream().CanRead)
-                {
-                    // Read data from the client socket.
-                    int noOfBytesRead = client.GetStream().EndRead(ar);
-                    state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, noOfBytesRead));
-                    content = state.sb.ToString();
-                    while (client.GetStream().DataAvailable)
-                    {
-                        client.GetStream().BeginRead(state.buffer, 0, StateObject.BufferSize,
-                            new AsyncCallback(ReceiveCallback), state);
-                    }
-                    // All the data has arrived; put it in response.
-                    if (state.sb.Length > 1)
-                    {
-                        response = state.sb.ToString();
-                    }
-                    // Signal that all bytes have been received.
-                    receiveDone.Set();
-                    OnMessageReceived($"Read {content.Length} bytes from socket. \n Data : {content}");
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        private void Send(TcpClient client, String data)
-        {
-            // Convert the string data to byte data using ASCII encoding.
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-            // Begin sending the data to the listening device.
-            client.GetStream().BeginWrite(byteData, 0, byteData.Length,
-                new AsyncCallback(SendCallback), client);
-        }
-
-        private void SendCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.
-                TcpClient client = (TcpClient)ar.AsyncState;
-
-                // Complete sending the data to the remote device.
-                client.GetStream().EndWrite(ar);
-                OnMessageSent($"Sent bytes to client.");
-
-                //TODO: client.Close();
-                // Signal that all bytes have been sent.
-                sendDone.Set();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
+        /// <summary>
+        /// Disposes the current instance of the Client.
+        /// </summary>
         public void StopClient()
         {
-            // cancellation token to cancel start server task
+            // cancellation token to cancel start server task.
             // tasks: https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx
             // CancellationToken: https://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx
             cancellationTokenSource?.Cancel();
-            if (client != null)
+            if (IsStarted)
             {
                 try
                 {
-                    client.Close();
+                    Client.Close();
+                    Client = null;
+                    IsStarted = false;
                     OnClientDisconnect();
                 }
-                catch (SocketException se)
+                catch (Exception e)
                 {
-                    Console.WriteLine("SocketException: {0}", se);
+                    Console.WriteLine(e.Message);
                 }
             }
         }
 
+        /// <summary>
+        /// Sends a request to send to the Server and returns the Server's response.
+        /// </summary>
+        /// <param name="ipAddress"></param>
+        /// <param name="port"></param>
+        /// <param name="requestType"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public async Task<string> SendRequest(string ipAddress, string port,
+            RequestResponseTypes requestType, string message)
+        {
+            try
+            {
+                NetworkStream networkStream = Client.GetStream();
+                StreamWriter writer = new StreamWriter(networkStream);
+                StreamReader reader = new StreamReader(networkStream);
+                writer.AutoFlush = true;
+                string requestData = CreateRequest(requestType, message);
+                cancellationToken.ThrowIfCancellationRequested();
+                await writer.WriteLineAsync(requestData);
+
+                Request deserializedRequest = JsonConvert.DeserializeObject<Request>(requestData);
+                OnMessageSent($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
+
+                cancellationToken.ThrowIfCancellationRequested();
+                string response = await reader.ReadLineAsync();
+                Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
+                OnMessageReceived($"\n\t{deserializedResponse.MessageType} : {deserializedResponse.Message}\n");
+                //client.Close();
+                return response;
+            }
+            catch (Exception e)
+            {
+                OnClientTimeout();
+                Console.WriteLine(e.Message);
+                return $"ERROR: {e.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Cancels operations and notifies the UI once a timeout has occured.
+        /// </summary>
         public void TimeoutClient()
         {
             cancellationTokenSource?.Cancel();
-            if (client != null)
+            if (IsStarted)
             {
                 try
                 {
-                    client.Close();
                     OnClientTimeout();
                 }
-                catch (SocketException se)
+                catch (Exception e)
                 {
-                    Console.WriteLine("SocketException: {0}", se);
+                    Console.WriteLine(e.Message);
                 }
             }
         }
+
+        /// <summary>
+        /// Returns a JSON string built from the serialized Response class and process response.
+        /// </summary>
+        /// <param name="requestType"></param>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        private static string CreateRequest(RequestResponseTypes requestType, string requestMessage)
+        {
+            Request requestObj = new Request(requestType, requestMessage);
+            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);
+            return jsonString;
+        }
+
+        #endregion Methods
+
+        #region EventHandlers
 
         protected virtual void OnClientConnectSuccess()
         {
@@ -270,5 +200,7 @@ namespace Client.ClientSocket
         {
             MessageSent?.Invoke(this, data);
         }
+
+        #endregion EventHandlers
     }
 }

@@ -2,22 +2,29 @@
 
 namespace Client
 {
+    /// <summary>
+    /// Client Form abstraction.
+    /// </summary>
     public interface IClientFormView
     {
-        //TODO: Finish client view abstraction
-
         event EventHandler EstablishConnection;
 
         event EventHandler DisconnectClient;
 
+        event EventHandler SendPing;
+
+        event EventHandler<(string key, string value)> AddKeyValuePair;
+
+        event EventHandler<string> SearchKeyValuePair;
+
+        event EventHandler ListKeyValuePairs;
+
         string IpAddress { get; }
         string PortNumber { get; }
-        string AddKeyInput { get; }
-        string AddValueInput { get; }
 
         void UpdateLog(string message);
 
-        void UpdateKeyValuePairLog(string message);
+        void UpdateKeyValueListLog(string message);
 
         void UpdateKeySearchResultLog(string message);
 
