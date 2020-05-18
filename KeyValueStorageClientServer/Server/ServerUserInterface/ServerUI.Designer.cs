@@ -181,6 +181,7 @@
             this.logRichTextBox.Size = new System.Drawing.Size(230, 265);
             this.logRichTextBox.TabIndex = 5;
             this.logRichTextBox.Text = "";
+            this.logRichTextBox.WordWrap = false;
             // 
             // ServerUI
             // 

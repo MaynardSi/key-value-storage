@@ -115,21 +115,25 @@ namespace Client.ClientSocket
             try
             {
                 NetworkStream networkStream = Client.GetStream();
+                networkStream.ReadTimeout = TIMEOUT;
+                networkStream.WriteTimeout = TIMEOUT;
+
                 StreamWriter writer = new StreamWriter(networkStream);
                 StreamReader reader = new StreamReader(networkStream);
                 writer.AutoFlush = true;
-                string requestData = CreateRequest(requestType, message);
+                string requestData = createRequest(requestType, message);
+
+                // Check if process has been cancelled before and after sending data.
                 cancellationToken.ThrowIfCancellationRequested();
                 await writer.WriteLineAsync(requestData);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 Request deserializedRequest = JsonConvert.DeserializeObject<Request>(requestData);
                 OnMessageSent($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
 
-                cancellationToken.ThrowIfCancellationRequested();
-                string response = await reader.ReadLineAsync();
+                string response = await reader.ReadLineAsync().WithCancellation(cancellationToken);
                 Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
                 OnMessageReceived($"\n\t{deserializedResponse.MessageType} : {deserializedResponse.Message}\n");
-                //client.Close();
                 return response;
             }
             catch (Exception e)
@@ -165,7 +169,7 @@ namespace Client.ClientSocket
         /// <param name="requestType"></param>
         /// <param name="response"></param>
         /// <returns></returns>
-        private static string CreateRequest(RequestResponseTypes requestType, string requestMessage)
+        private static string createRequest(RequestResponseTypes requestType, string requestMessage)
         {
             Request requestObj = new Request(requestType, requestMessage);
             string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);

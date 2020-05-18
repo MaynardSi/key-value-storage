@@ -25,17 +25,17 @@ namespace ServerApp
             server = serverSocket;
 
             // Register UI Events
-            mainView.ServerStarting += StartServerAsync;
-            mainView.ServerEnding += StopServer;
+            mainView.ServerStarting += startServerAsync;
+            mainView.ServerEnding += stopServer;
 
             // Register Socket Events
-            serverSocket.ServerStarted += ServerStarted;
-            serverSocket.ServerStopped += ServerStopped;
-            serverSocket.WaitingClient += WaitingClient;
-            serverSocket.ClientConnected += ClientConnected;
-            serverSocket.ClientDisconnected += ClientDisconnected;
-            serverSocket.MessageReceived += MessageReceived;
-            serverSocket.MessageSent += MessageSent;
+            serverSocket.ServerStarted += serverStarted;
+            serverSocket.ServerStopped += serverStopped;
+            serverSocket.WaitingClient += waitingClient;
+            serverSocket.ClientConnected += clientConnected;
+            serverSocket.ClientDisconnected += clientDisconnected;
+            serverSocket.MessageReceived += messageReceived;
+            serverSocket.MessageSent += messageSent;
         }
 
         #endregion Constructor
@@ -60,7 +60,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void StartServerAsync(object sender, EventArgs e)
+        private async void startServerAsync(object sender, EventArgs e)
         {
             AddLogMessage("Starting server...");
             await server.StartServer(_view.IpAddress, _view.PortNumber);
@@ -71,7 +71,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void StopServer(object sender, EventArgs e)
+        private void stopServer(object sender, EventArgs e)
         {
             AddLogMessage("Stopping server...");
             server.StopServer();
@@ -86,7 +86,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ServerStarted(object sender, EventArgs e)
+        private void serverStarted(object sender, EventArgs e)
         {
             AddLogMessage("Server successfully started...");
         }
@@ -96,7 +96,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ServerStopped(object sender, EventArgs e)
+        private void serverStopped(object sender, EventArgs e)
         {
             // Display to UI that server successfuly stopped
             AddLogMessage("Server has shutdown...");
@@ -107,7 +107,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void WaitingClient(object sender, EventArgs e)
+        private void waitingClient(object sender, EventArgs e)
         {
             AddLogMessage("Waiting for a connection... ");
         }
@@ -117,7 +117,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ClientConnected(object sender, string e)
+        private void clientConnected(object sender, string e)
         {
             AddLogMessage($"Connected: {e}");
         }
@@ -127,7 +127,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ClientDisconnected(object sender, string e)
+        private void clientDisconnected(object sender, string e)
         {
             AddLogMessage($"Disconnected: {e}");
         }
@@ -137,7 +137,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void MessageReceived(object sender, string e)
+        private void messageReceived(object sender, string e)
         {
             AddLogMessage($"Received: {e}");
         }
@@ -147,7 +147,7 @@ namespace ServerApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void MessageSent(object sender, string e)
+        private void messageSent(object sender, string e)
         {
             AddLogMessage($"Sent: {e}");
         }

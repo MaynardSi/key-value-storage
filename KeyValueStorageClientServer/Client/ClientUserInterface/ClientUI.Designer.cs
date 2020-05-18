@@ -95,7 +95,7 @@
             this.pingButton.TabIndex = 4;
             this.pingButton.Text = "Send Ping";
             this.pingButton.UseVisualStyleBackColor = true;
-            this.pingButton.Click += new System.EventHandler(this.pingButton_Click);
+            this.pingButton.Click += new System.EventHandler(this.PingButton_Click);
             // 
             // logRichTextBox
             // 
@@ -105,6 +105,7 @@
             this.logRichTextBox.Size = new System.Drawing.Size(230, 265);
             this.logRichTextBox.TabIndex = 5;
             this.logRichTextBox.Text = "";
+            this.logRichTextBox.WordWrap = false;
             // 
             // label6
             // 
@@ -166,7 +167,7 @@
             this.connectToggleButton.Text = "Connect";
             this.connectToggleButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.connectToggleButton.UseVisualStyleBackColor = true;
-            this.connectToggleButton.Click += new System.EventHandler(this.connectToggleButton_Click);
+            this.connectToggleButton.Click += new System.EventHandler(this.ConnectToggleButton_Click);
             // 
             // ipAddressTextBox
             // 
@@ -263,7 +264,7 @@
             this.keySearchButton.TabIndex = 13;
             this.keySearchButton.Text = "[ GET ]";
             this.keySearchButton.UseVisualStyleBackColor = true;
-            this.keySearchButton.Click += new System.EventHandler(this.keySearchButton_Click);
+            this.keySearchButton.Click += new System.EventHandler(this.KeySearchButton_Click);
             // 
             // keySearchTextBox
             // 
@@ -311,7 +312,7 @@
             this.getAllValuesButton.TabIndex = 12;
             this.getAllValuesButton.Text = "Update List ( [ GET ] All )";
             this.getAllValuesButton.UseVisualStyleBackColor = true;
-            this.getAllValuesButton.Click += new System.EventHandler(this.getAllValuesButton_Click);
+            this.getAllValuesButton.Click += new System.EventHandler(this.GetAllValuesButton_Click);
             // 
             // label7
             // 
@@ -357,7 +358,7 @@
             this.addKeyValuePairButton.TabIndex = 12;
             this.addKeyValuePairButton.Text = "+";
             this.addKeyValuePairButton.UseVisualStyleBackColor = true;
-            this.addKeyValuePairButton.Click += new System.EventHandler(this.addKeyValuePairButton_Click);
+            this.addKeyValuePairButton.Click += new System.EventHandler(this.AddKeyValuePairButton_Click);
             // 
             // addValueTextBox
             // 

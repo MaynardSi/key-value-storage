@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using static Common.RequestResponseEnum;
+using static Common.TaskExtension;
 
 namespace Server.ServerSocket
 {
@@ -88,14 +89,17 @@ namespace Server.ServerSocket
                 {
                     // Notify UI that Server is waiting for a client.
                     OnWaitingClient();
+
                     // Start accepting client.
                     cancellationToken.ThrowIfCancellationRequested();
                     TcpClient client = await Server.AcceptTcpClientAsync();
+
                     // Notify UI that a client has connected.
                     string clientEndPoint = client.Client.RemoteEndPoint.ToString();
                     OnClientConnected(clientEndPoint);
+
                     // Start receiving client request and generate response.
-                    Task t = _process(client, clientEndPoint, ipAddressString, portString);
+                    Task t = process(client, clientEndPoint, ipAddressString, portString);
                     cancellationToken.ThrowIfCancellationRequested();
                     await t;
                 }
@@ -114,12 +118,13 @@ namespace Server.ServerSocket
             // cancellation token to cancel start server task
             // tasks: https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx
             // CancellationToken: https://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx
-            cancellationTokenSource?.Cancel();
             if (IsStarted)
             {
+                cancellationTokenSource?.Cancel();
                 try
                 {
                     Server.Stop();
+                    Server = null;
                     IsStarted = false;
                     OnServerStopped();
                 }
@@ -135,11 +140,13 @@ namespace Server.ServerSocket
         /// </summary>
         /// <param name="client"></param>
         /// <returns></returns>
-        private async Task _process(TcpClient client, string clientEndPoint, string ipAddressString, string portString)
+        private async Task process(TcpClient client, string clientEndPoint, string ipAddressString, string portString)
         {
             try
             {
                 NetworkStream networkStream = client.GetStream();
+                networkStream.ReadTimeout = TIMEOUT;
+                networkStream.WriteTimeout = TIMEOUT;
                 StreamReader reader = new StreamReader(networkStream);
                 StreamWriter writer = new StreamWriter(networkStream);
 
@@ -148,8 +155,7 @@ namespace Server.ServerSocket
                 writer.AutoFlush = true;
                 while (true)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    string request = await reader.ReadLineAsync();
+                    string request = await reader.ReadLineAsync().WithCancellation(cancellationToken);
                     if (request != null)
                     {
                         // Notify UI that request has been received.
@@ -157,9 +163,12 @@ namespace Server.ServerSocket
                         OnMessageReceived($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
 
                         // Parse and process client request.
-                        string response = _processClientRequest(deserializedRequest);
+                        string response = processClientRequest(deserializedRequest);
+
+                        // Check if process has been cancelled before and after sending data.
                         cancellationToken.ThrowIfCancellationRequested();
                         await writer.WriteLineAsync(response);
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         // Notify UI that response has been sent.
                         Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
@@ -169,7 +178,7 @@ namespace Server.ServerSocket
                     {
                         clientEndPoint = clientEndPoint ?? "No client found";
                         OnClientDisconnected(clientEndPoint); // Notify UI Client Disconnected.
-                        await this.StartServer(ipAddressString, portString); // Seems like a bad idea
+                        await Task.Run(() => this.StartServer(ipAddressString, portString), cancellationToken);
                         break; // Client has closed the connection or network stream unavailable.
                     }
                 }
@@ -189,7 +198,7 @@ namespace Server.ServerSocket
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        private string _processClientRequest(Request request)
+        private string processClientRequest(Request request)
         {
             string response;
 
@@ -217,7 +226,7 @@ namespace Server.ServerSocket
 
                 default:
                     // Unknown response type
-                    response = "Request Error";
+                    response = "REQUEST ERROR";
                     break;
             }
             return response;
@@ -234,7 +243,7 @@ namespace Server.ServerSocket
             {
                 return $"{result}";
             }
-            return $"ERROR NOT FOUND";
+            return $"ERROR: NOT FOUND";
         }
 
         /// <summary>
@@ -264,12 +273,15 @@ namespace Server.ServerSocket
             string[] keyValuePair = message.Split(',');
             string key = keyValuePair[0];
             string value = keyValuePair[1];
-            if (!repository.KeyValuePairs.ContainsKey(key))
+            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
             {
-                repository.KeyValuePairs.Add(key, value);
-                return $"OK: {key}, {value} ADDED ";
+                if (!repository.KeyValuePairs.ContainsKey(key))
+                {
+                    repository.KeyValuePairs.Add(key, value);
+                    return $"OK: {key}, {value} ADDED ";
+                }
             }
-            return $"ERROR NOT ADDED";
+            return $"ERROR: NOT ADDED";
         }
 
         /// <summary>

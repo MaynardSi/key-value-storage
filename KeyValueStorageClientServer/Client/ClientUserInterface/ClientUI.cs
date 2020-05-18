@@ -61,6 +61,7 @@ namespace ClientApp
         {
             InvokeUI(() =>
             {
+                keyValuePairListBox.Text = String.Empty;
                 keyValuePairListBox.Text += $"{ message } \n";
                 keyValuePairListBox.Refresh();
             });
@@ -174,7 +175,7 @@ namespace ClientApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        public void connectToggleButton_Click(object sender, EventArgs e)
+        public void ConnectToggleButton_Click(object sender, EventArgs e)
         {
             string ipAddress = ipAddressTextBox.Text;
             string port = portTextBox.Text;
@@ -198,7 +199,7 @@ namespace ClientApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void keySearchButton_Click(object sender, EventArgs e)
+        public void KeySearchButton_Click(object sender, EventArgs e)
         {
             string searchkey = keySearchTextBox.Text;
             SearchKeyValuePair?.Invoke(sender, searchkey);
@@ -209,7 +210,7 @@ namespace ClientApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void addKeyValuePairButton_Click(object sender, EventArgs e)
+        public void AddKeyValuePairButton_Click(object sender, EventArgs e)
         {
             string addkey = addKeyTextBox.Text;
             string addValue = addValueTextBox.Text;
@@ -221,7 +222,7 @@ namespace ClientApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void getAllValuesButton_Click(object sender, EventArgs e)
+        public void GetAllValuesButton_Click(object sender, EventArgs e)
         {
             ListKeyValuePairs?.Invoke(sender, e);
         }
@@ -231,7 +232,7 @@ namespace ClientApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void pingButton_Click(object sender, EventArgs e)
+        public void PingButton_Click(object sender, EventArgs e)
         {
             SendPing?.Invoke(sender, e);
         }

@@ -48,7 +48,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KeyValuePairRepository.cs" />
-    <Compile Include="ServerSocket\StateObject.cs" />
     <Compile Include="ServerSocket\ServerSocket.cs" />
     <Compile Include="ServerUIPresenter.cs" />
     <Compile Include="ServerUserInterface\IMainServerView.cs" />

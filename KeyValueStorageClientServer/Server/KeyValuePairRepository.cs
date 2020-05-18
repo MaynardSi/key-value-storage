@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 
 /// <summary>
-/// Repository class for the Key Value Pair
+/// Repository class for the Key Value Pair.
 /// </summary>
 public class KeyValuePairRepository
 {

@@ -1,6 +1,7 @@
 ﻿using Common;
 using Newtonsoft.Json;
 using System;
+using System.Net.Sockets;
 using static Common.RequestResponseEnum;
 
 namespace Client.ClientSocket
@@ -26,19 +27,19 @@ namespace Client.ClientSocket
             client = clientSocket;
 
             // Register UI events
-            mainView.EstablishConnection += EstablishConnectionAsync;
-            mainView.DisconnectClient += DisconnectClient;
-            mainView.SendPing += SendPingAsync;
-            mainView.AddKeyValuePair += AddKeyValuePair;
-            mainView.ListKeyValuePairs += ListKeyValuePairs;
-            mainView.SearchKeyValuePair += SearchKeyValue;
+            mainView.EstablishConnection += establishConnectionAsync;
+            mainView.DisconnectClient += disconnectClient;
+            mainView.SendPing += sendPingAsync;
+            mainView.AddKeyValuePair += addKeyValuePair;
+            mainView.ListKeyValuePairs += listKeyValuePairs;
+            mainView.SearchKeyValuePair += searchKeyValue;
 
             // Register Client events
-            clientSocket.ClientConnected += OnClientConnected;
-            clientSocket.ClientTimeout += OnClientTimeout;
-            clientSocket.ClientDisconnected += OnClientDisconnected;
-            clientSocket.MessageReceived += MessageReceived;
-            clientSocket.MessageSent += MessageSent;
+            clientSocket.ClientConnected += clientConnected;
+            clientSocket.ClientTimeout += clientTimeout;
+            clientSocket.ClientDisconnected += clientDisconnected;
+            clientSocket.MessageReceived += messageReceived;
+            clientSocket.MessageSent += messageSent;
         }
 
         #endregion Constructor
@@ -63,10 +64,17 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void EstablishConnectionAsync(object sender, EventArgs e)
+        private async void establishConnectionAsync(object sender, EventArgs e)
         {
             AddLogMessage("Establishing Connection...");
-            await client.StartClientAsync(_view.IpAddress, _view.PortNumber);
+            try
+            {
+                await client.StartClientAsync(_view.IpAddress, _view.PortNumber);
+            }
+            catch (SocketException)
+            {
+                onServerNotFound();
+            }
         }
 
         /// <summary>
@@ -74,7 +82,7 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DisconnectClient(object sender, EventArgs e)
+        private void disconnectClient(object sender, EventArgs e)
         {
             AddLogMessage("Disconnecting...");
             client.StopClient();
@@ -85,14 +93,12 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void SearchKeyValue(object sender, string e)
+        private async void searchKeyValue(object sender, string e)
         {
             // GET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
                 RequestResponseTypes.GET, e);
-            Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-            string getResponse = deserializedResponse.Message;
-            _view.UpdateKeySearchResultLog($"\nKey resulted in value {getResponse}");
+            _view.UpdateKeySearchResultLog($"[ {e} ] : [ {createResponse(response)} ]");
         }
 
         /// <summary>
@@ -100,14 +106,12 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void ListKeyValuePairs(object sender, EventArgs e)
+        private async void listKeyValuePairs(object sender, EventArgs e)
         {
             //GETALL
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
                RequestResponseTypes.GETALL, "GETALL");
-            Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-            string getResponse = deserializedResponse.Message;
-            _view.UpdateKeyValueListLog($"{getResponse}");
+            _view.UpdateKeyValueListLog($"{createResponse(response)}");
         }
 
         /// <summary>
@@ -115,14 +119,12 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void AddKeyValuePair(object sender, (string key, string value) e)
+        private async void addKeyValuePair(object sender, (string key, string value) e)
         {
             // SET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
                 RequestResponseTypes.SET, $"{e.key},{e.value}");
-            Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-            string setResponse = deserializedResponse.Message;
-            AddLogMessage($"Response:\n\t{setResponse}");
+            AddLogMessage($"Response:\n\t{createResponse(response)}");
         }
 
         /// <summary>
@@ -130,13 +132,24 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void SendPingAsync(object sender, EventArgs e)
+        private async void sendPingAsync(object sender, EventArgs e)
         {
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
                 RequestResponseTypes.PING, "PING");
-            Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-            string pingResponse = deserializedResponse.Message;
-            AddLogMessage($"Response:\n\t{pingResponse}");
+            AddLogMessage($"Response:\n\t{createResponse(response)}");
+        }
+
+        private string createResponse(string response)
+        {
+            try
+            {
+                Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
+                return deserializedResponse.Message;
+            }
+            catch (Exception)
+            {
+                return "ERROR: NO RESPONSE";
+            }
         }
 
         #endregion UIEvents
@@ -144,11 +157,22 @@ namespace Client.ClientSocket
         #region Socket Events
 
         /// <summary>
+        /// Notifies UI thread that the server is not available.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void onServerNotFound()
+        {
+            AddLogMessage("TIMEOUT: Server not available...");
+            _view.ClientStatusFormUpdate(ClientStatus.DISCONNECTED);
+        }
+
+        /// <summary>
         /// Notifies UI thread that the client has connected.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnClientConnected(object sender, EventArgs e)
+        private void clientConnected(object sender, EventArgs e)
         {
             AddLogMessage("Connected to server...");
             _view.ClientStatusFormUpdate(ClientStatus.CONNECTED);
@@ -159,7 +183,7 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnClientDisconnected(object sender, EventArgs e)
+        private void clientDisconnected(object sender, EventArgs e)
         {
             AddLogMessage("Disconnected to server...");
             _view.ClientStatusFormUpdate(ClientStatus.DISCONNECTED);
@@ -170,9 +194,9 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnClientTimeout(object sender, EventArgs e)
+        private void clientTimeout(object sender, EventArgs e)
         {
-            AddLogMessage("Client timeout, stopping connection...");
+            AddLogMessage("CLIENT TIMEOUT: stopping connection...");
             _view.ClientStatusFormUpdate(ClientStatus.TIMEOUT);
         }
 
@@ -181,7 +205,7 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void MessageReceived(object sender, string e)
+        private void messageReceived(object sender, string e)
         {
             AddLogMessage($"Received: {e}");
         }
@@ -191,7 +215,7 @@ namespace Client.ClientSocket
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void MessageSent(object sender, string e)
+        private void messageSent(object sender, string e)
         {
             AddLogMessage($"Sent: {e}");
         }
