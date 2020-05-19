@@ -6,12 +6,9 @@ namespace Common
     {
         public Request(RequestResponseTypes requestType, string message)
         {
-            MessageID = GenerateUniqueID.GetShortID();
-            MessageType = "REQUEST";
-            RequestType = requestType;
+            MessageID = $"M-{GenerateUniqueID.GetShortID()}";
+            MessageType = requestType;
             Message = message;
         }
-
-        public RequestResponseTypes RequestType { get; set; }
     }
 }

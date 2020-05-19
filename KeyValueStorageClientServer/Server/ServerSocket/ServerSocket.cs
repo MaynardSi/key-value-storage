@@ -164,7 +164,7 @@ namespace Server.ServerSocket
 
                         // Parse and process client request.
                         string response = processClientRequest(deserializedRequest);
-
+                        Console.WriteLine(response);
                         // Check if process has been cancelled before and after sending data.
                         cancellationToken.ThrowIfCancellationRequested();
                         await writer.WriteLineAsync(response);
@@ -202,26 +202,26 @@ namespace Server.ServerSocket
         {
             string response;
 
-            switch (request.RequestType)
+            switch (request.MessageType)
             {
                 case RequestResponseTypes.GET:
                     // Return KVP string
-                    response = _createResponse(request.RequestType, _processClientGET(request.Message));
+                    response = _createResponse(request.MessageType, _processClientGET(request.Message));
                     break;
 
                 case RequestResponseTypes.GETALL:
                     // Return KVP string
-                    response = _createResponse(request.RequestType, _processClientGETALL(request.Message));
+                    response = _createResponse(request.MessageType, _processClientGETALL(request.Message));
                     break;
 
                 case RequestResponseTypes.SET:
                     // Store KVP in repository and return OK
-                    response = _createResponse(request.RequestType, _processClientSET(request.Message));
+                    response = _createResponse(request.MessageType, _processClientSET(request.Message));
                     break;
 
                 case RequestResponseTypes.PING:
                     // Return a response of PONG
-                    response = _createResponse(request.RequestType, _processClientPING(request.Message));
+                    response = _createResponse(request.MessageType, _processClientPING(request.Message));
                     break;
 
                 default:
@@ -230,6 +230,19 @@ namespace Server.ServerSocket
                     break;
             }
             return response;
+        }
+
+        /// <summary>
+        /// Returns a JSON string built from the serialized Response class and process response.
+        /// </summary>
+        /// <param name="requestType"></param>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        private static string _createResponse(RequestResponseTypes requestType, string response)
+        {
+            Response responseObj = new Response(requestType, response);
+            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
+            return jsonString;
         }
 
         /// <summary>
@@ -292,19 +305,6 @@ namespace Server.ServerSocket
         private string _processClientPING(string keyFromMessage)
         {
             return "PONG";
-        }
-
-        /// <summary>
-        /// Returns a JSON string built from the serialized Response class and process response.
-        /// </summary>
-        /// <param name="requestType"></param>
-        /// <param name="response"></param>
-        /// <returns></returns>
-        private static string _createResponse(RequestResponseTypes requestType, string response)
-        {
-            Response responseObj = new Response(requestType, response);
-            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
-            return jsonString;
         }
 
         #endregion Methods
