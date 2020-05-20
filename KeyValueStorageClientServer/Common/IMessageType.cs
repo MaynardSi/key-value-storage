@@ -1,12 +1,10 @@
-﻿using static Common.RequestResponseEnum;
-
-namespace Common
+﻿namespace Common
 {
     public class IMessageType
     {
-        public string MessageID { get; set; }
+        public string Id { get; set; }
 
-        public RequestResponseTypes MessageType { get; set; } // "REQUEST"/"RESPONSE"
+        public string Command { get; set; } // "REQUEST"/"RESPONSE"
 
         public string Message { get; set; }
     }

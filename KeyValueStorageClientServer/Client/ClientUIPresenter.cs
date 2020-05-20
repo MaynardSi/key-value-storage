@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using System;
 using System.Net.Sockets;
-using static Common.RequestResponseEnum;
 
 namespace Client.ClientSocket
 {
@@ -97,7 +96,7 @@ namespace Client.ClientSocket
         {
             // GET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                RequestResponseTypes.GET, e);
+                "GET", e);
             _view.UpdateKeySearchResultLog($"[ {e} ] : [ {createResponse(response)} ]");
         }
 
@@ -110,7 +109,7 @@ namespace Client.ClientSocket
         {
             //GETALL
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-               RequestResponseTypes.GETALL, "GETALL");
+               "GETALL", "GETALL");
             _view.UpdateKeyValueListLog($"{createResponse(response)}");
         }
 
@@ -123,7 +122,7 @@ namespace Client.ClientSocket
         {
             // SET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                RequestResponseTypes.SET, $"{e.key},{e.value}");
+                "SET", $"{e.key},{e.value}");
             AddLogMessage($"Response:\n\t{createResponse(response)}");
         }
 
@@ -135,7 +134,7 @@ namespace Client.ClientSocket
         private async void sendPingAsync(object sender, EventArgs e)
         {
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                RequestResponseTypes.PING, "PING");
+                "PING", "PING");
             AddLogMessage($"Response:\n\t{createResponse(response)}");
         }
 

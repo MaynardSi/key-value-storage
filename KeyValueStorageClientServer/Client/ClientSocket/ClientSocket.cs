@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using static Common.RequestResponseEnum;
+using static Common.MessageWrapper;
 
 namespace Client.ClientSocket
 {
@@ -110,30 +110,30 @@ namespace Client.ClientSocket
         /// <param name="message"></param>
         /// <returns></returns>
         public async Task<string> SendRequest(string ipAddress, string port,
-            RequestResponseTypes requestType, string message)
+            string requestType, string message)
         {
             try
             {
                 NetworkStream networkStream = Client.GetStream();
-                networkStream.ReadTimeout = TIMEOUT;
-                networkStream.WriteTimeout = TIMEOUT;
+                //networkStream.ReadTimeout = TIMEOUT * 2;
+                //networkStream.WriteTimeout = TIMEOUT * 2;
 
                 StreamWriter writer = new StreamWriter(networkStream);
                 StreamReader reader = new StreamReader(networkStream);
                 writer.AutoFlush = true;
-                string requestData = createRequest(requestType, message);
+                string requestData = CreateRequest(requestType, message);
 
                 // Check if process has been cancelled before and after sending data.
                 cancellationToken.ThrowIfCancellationRequested();
                 await writer.WriteLineAsync(requestData);
                 cancellationToken.ThrowIfCancellationRequested();
-
                 Request deserializedRequest = JsonConvert.DeserializeObject<Request>(requestData);
-                OnMessageSent($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
+                OnMessageSent($"\n\t{deserializedRequest.Command} : {deserializedRequest.Message}\n");
 
-                string response = await reader.ReadLineAsync().WithCancellation(cancellationToken);
+                //string response = await reader.ReadLineAsync().WithCancellation(cancellationToken);
+                string response = reader.ReadLine();
                 Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-                OnMessageReceived($"\n\t{deserializedResponse.MessageType} : {deserializedResponse.Message}\n");
+                OnMessageReceived($"\n\t{deserializedResponse.Command} : {deserializedResponse.Message}\n");
                 return response;
             }
             catch (Exception e)
@@ -163,18 +163,18 @@ namespace Client.ClientSocket
             }
         }
 
-        /// <summary>
-        /// Returns a JSON string built from the serialized Response class and process response.
-        /// </summary>
-        /// <param name="requestType"></param>
-        /// <param name="response"></param>
-        /// <returns></returns>
-        private static string createRequest(RequestResponseTypes requestType, string requestMessage)
-        {
-            Request requestObj = new Request(requestType, requestMessage);
-            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);
-            return jsonString;
-        }
+        ///// <summary>
+        ///// Returns a JSON string built from the serialized Response class and process response.
+        ///// </summary>
+        ///// <param name="requestType"></param>
+        ///// <param name="response"></param>
+        ///// <returns></returns>
+        //private static string createRequest(string requestType, string requestMessage)
+        //{
+        //    Request requestObj = new Request(requestType, requestMessage);
+        //    string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);
+        //    return jsonString;
+        //}
 
         #endregion Methods
 

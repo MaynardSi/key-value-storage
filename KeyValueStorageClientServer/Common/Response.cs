@@ -1,13 +1,17 @@
-﻿using static Common.RequestResponseEnum;
+﻿using Newtonsoft.Json;
 
 namespace Common
 {
     public class Response : IMessageType
     {
-        public Response(RequestResponseTypes responseType, string message)
+        // Constructor chaining
+        public Response(string requestType, string message) : this($"M-{GenerateUniqueID.GetShortID()}", requestType, message) { }
+
+        [JsonConstructor]
+        public Response(string id, string responseType, string message)
         {
-            MessageID = $"M-{GenerateUniqueID.GetShortID()}";
-            MessageType = responseType;
+            Id = id;
+            Command = responseType;
             Message = message;
         }
     }

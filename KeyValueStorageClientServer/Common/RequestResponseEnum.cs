@@ -2,12 +2,12 @@
 {
     public class RequestResponseEnum
     {
-        public enum RequestResponseTypes
+        public string[] RequestResponseTypes =
         {
-            GET,
-            GETALL,
-            SET,
-            PING
-        }
+            "GET",
+            "GETALL",
+            "SET",
+            "PING"
+        };
     }
 }

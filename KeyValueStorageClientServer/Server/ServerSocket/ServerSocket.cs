@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using static Common.RequestResponseEnum;
+using static Common.MessageWrapper;
 using static Common.TaskExtension;
 
 namespace Server.ServerSocket
@@ -156,11 +156,13 @@ namespace Server.ServerSocket
                 while (true)
                 {
                     string request = await reader.ReadLineAsync().WithCancellation(cancellationToken);
+                    OnMessageReceived(request);
                     if (request != null)
                     {
                         // Notify UI that request has been received.
-                        Request deserializedRequest = JsonConvert.DeserializeObject<Request>(request);
-                        OnMessageReceived($"\n\t{deserializedRequest.MessageType} : {deserializedRequest.Message}\n");
+                        //Request deserializedRequest = JsonConvert.DeserializeObject<Request>(request);
+                        Request deserializedRequest = JsonConvert.DeserializeObject<Request>(WrapRequest(request)); // Wraps request for compatibility
+                        OnMessageReceived($"\n\t{deserializedRequest.Command} : {deserializedRequest.Message}\n");
 
                         // Parse and process client request.
                         string response = processClientRequest(deserializedRequest);
@@ -172,7 +174,7 @@ namespace Server.ServerSocket
 
                         // Notify UI that response has been sent.
                         Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-                        OnMessageSent($"\n\t{deserializedResponse.MessageType} : {deserializedResponse.Message}");
+                        OnMessageSent($"\n\t{deserializedResponse.Command} : {deserializedResponse.Message}");
                     }
                     else
                     {
@@ -202,26 +204,26 @@ namespace Server.ServerSocket
         {
             string response;
 
-            switch (request.MessageType)
+            switch (request.Command)
             {
-                case RequestResponseTypes.GET:
+                case "GET":
                     // Return KVP string
-                    response = _createResponse(request.MessageType, _processClientGET(request.Message));
+                    response = CreateResponse(request.Command, _processClientGET(request.Message));
                     break;
 
-                case RequestResponseTypes.GETALL:
+                case "GETALL":
                     // Return KVP string
-                    response = _createResponse(request.MessageType, _processClientGETALL(request.Message));
+                    response = CreateResponse(request.Command, _processClientGETALL(request.Message));
                     break;
 
-                case RequestResponseTypes.SET:
+                case "SET":
                     // Store KVP in repository and return OK
-                    response = _createResponse(request.MessageType, _processClientSET(request.Message));
+                    response = CreateResponse(request.Command, _processClientSET(request.Message));
                     break;
 
-                case RequestResponseTypes.PING:
+                case "PING":
                     // Return a response of PONG
-                    response = _createResponse(request.MessageType, _processClientPING(request.Message));
+                    response = CreateResponse(request.Command, _processClientPING(request.Message));
                     break;
 
                 default:
@@ -232,18 +234,18 @@ namespace Server.ServerSocket
             return response;
         }
 
-        /// <summary>
-        /// Returns a JSON string built from the serialized Response class and process response.
-        /// </summary>
-        /// <param name="requestType"></param>
-        /// <param name="response"></param>
-        /// <returns></returns>
-        private static string _createResponse(RequestResponseTypes requestType, string response)
-        {
-            Response responseObj = new Response(requestType, response);
-            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
-            return jsonString;
-        }
+        ///// <summary>
+        ///// Returns a JSON string built from the serialized Response class and process response.
+        ///// </summary>
+        ///// <param name="requestType"></param>
+        ///// <param name="response"></param>
+        ///// <returns></returns>
+        //public static string CreateResponse(string requestType, string response)
+        //{
+        //    Response responseObj = new Response(requestType, response);
+        //    string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
+        //    return jsonString;
+        //}
 
         /// <summary>
         /// Returns the value of and item in the repository given a queried key from a request.
