@@ -1,5 +1,4 @@
 ﻿using Common;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Net;
@@ -102,6 +101,28 @@ namespace Client.ClientSocket
         }
 
         /// <summary>
+        /// Cancels operations and notifies the UI once a timeout has occured.
+        /// </summary>
+        public void TimeoutClient()
+        {
+            cancellationTokenSource?.Cancel();
+            if (IsStarted)
+            {
+                try
+                {
+                    Client.Close();
+                    Client = null;
+                    IsStarted = false;
+                    OnClientTimeout();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sends a request to send to the Server and returns the Server's response.
         /// </summary>
         /// <param name="ipAddress"></param>
@@ -114,67 +135,36 @@ namespace Client.ClientSocket
         {
             try
             {
-                NetworkStream networkStream = Client.GetStream();
-                //networkStream.ReadTimeout = TIMEOUT * 2;
-                //networkStream.WriteTimeout = TIMEOUT * 2;
+                Byte[] responseByte;
+                string responseString = String.Empty;
 
+                NetworkStream networkStream = Client.GetStream();
+                networkStream.ReadTimeout = TIMEOUT * 2;
+                networkStream.WriteTimeout = TIMEOUT * 2;
                 StreamWriter writer = new StreamWriter(networkStream);
-                StreamReader reader = new StreamReader(networkStream);
                 writer.AutoFlush = true;
+
                 string requestData = CreateRequest(requestType, message);
 
                 // Check if process has been cancelled before and after sending data.
                 cancellationToken.ThrowIfCancellationRequested();
                 await writer.WriteLineAsync(requestData);
                 cancellationToken.ThrowIfCancellationRequested();
-                Request deserializedRequest = JsonConvert.DeserializeObject<Request>(requestData);
-                OnMessageSent($"\n\t{deserializedRequest.Command} : {deserializedRequest.Message}\n");
+                OnMessageSent(requestData);
 
-                //string response = await reader.ReadLineAsync().WithCancellation(cancellationToken);
-                string response = reader.ReadLine();
-                Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-                OnMessageReceived($"\n\t{deserializedResponse.Command} : {deserializedResponse.Message}\n");
-                return response;
+                responseByte = new byte[256];
+                await networkStream.ReadAsync(responseByte, 0, responseByte.Length).WithCancellation(cancellationToken);
+                responseString = System.Text.Encoding.ASCII.GetString(responseByte);
+                OnMessageReceived(responseString);
+
+                return responseString;
             }
             catch (Exception e)
             {
-                OnClientTimeout();
-                Console.WriteLine(e.Message);
+                TimeoutClient();
                 return $"ERROR: {e.Message}";
             }
         }
-
-        /// <summary>
-        /// Cancels operations and notifies the UI once a timeout has occured.
-        /// </summary>
-        public void TimeoutClient()
-        {
-            cancellationTokenSource?.Cancel();
-            if (IsStarted)
-            {
-                try
-                {
-                    OnClientTimeout();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            }
-        }
-
-        ///// <summary>
-        ///// Returns a JSON string built from the serialized Response class and process response.
-        ///// </summary>
-        ///// <param name="requestType"></param>
-        ///// <param name="response"></param>
-        ///// <returns></returns>
-        //private static string createRequest(string requestType, string requestMessage)
-        //{
-        //    Request requestObj = new Request(requestType, requestMessage);
-        //    string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);
-        //    return jsonString;
-        //}
 
         #endregion Methods
 

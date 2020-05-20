@@ -54,6 +54,15 @@ namespace Client.ClientSocket
             _view.UpdateLog(message);
         }
 
+        /// <summary>
+        /// Displays a message box containing the message.
+        /// </summary>
+        /// <param name="message"></param>
+        public void ShowMessageBox(string message)
+        {
+            _view.ShowMessage(message);
+        }
+
         #endregion Methods
 
         #region UIEvents
@@ -95,8 +104,7 @@ namespace Client.ClientSocket
         private async void searchKeyValue(object sender, string e)
         {
             // GET
-            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                "GET", e);
+            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "GET", e);
             _view.UpdateKeySearchResultLog($"[ {e} ] : [ {createResponse(response)} ]");
         }
 
@@ -108,8 +116,7 @@ namespace Client.ClientSocket
         private async void listKeyValuePairs(object sender, EventArgs e)
         {
             //GETALL
-            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-               "GETALL", "GETALL");
+            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "GETALL", "GETALL");
             _view.UpdateKeyValueListLog($"{createResponse(response)}");
         }
 
@@ -121,9 +128,8 @@ namespace Client.ClientSocket
         private async void addKeyValuePair(object sender, (string key, string value) e)
         {
             // SET
-            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                "SET", $"{e.key},{e.value}");
-            AddLogMessage($"Response:\n\t{createResponse(response)}");
+            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "SET", $"{e.key},{e.value}");
+            ShowMessageBox($"Response: {createResponse(response)}");
         }
 
         /// <summary>
@@ -133,9 +139,8 @@ namespace Client.ClientSocket
         /// <param name="e"></param>
         private async void sendPingAsync(object sender, EventArgs e)
         {
-            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber,
-                "PING", "PING");
-            AddLogMessage($"Response:\n\t{createResponse(response)}");
+            string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "PING", "PING");
+            ShowMessageBox($"Response: {createResponse(response)}");
         }
 
         private string createResponse(string response)

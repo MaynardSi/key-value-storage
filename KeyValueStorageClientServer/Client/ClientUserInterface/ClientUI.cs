@@ -41,6 +41,18 @@ namespace ClientApp
         #region Methods
 
         /// <summary>
+        /// Displays a MessageBox containing the message string.
+        /// </summary>
+        /// <param name="message"></param>
+        public void ShowMessage(string message)
+        {
+            InvokeUI(() =>
+            {
+                MessageBox.Show(message);
+            });
+        }
+
+        /// <summary>
         /// Appends the message to the Client log.
         /// </summary>
         /// <param name="message"></param>

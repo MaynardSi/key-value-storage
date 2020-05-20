@@ -147,34 +147,35 @@ namespace Server.ServerSocket
                 NetworkStream networkStream = client.GetStream();
                 networkStream.ReadTimeout = TIMEOUT;
                 networkStream.WriteTimeout = TIMEOUT;
-                StreamReader reader = new StreamReader(networkStream);
                 StreamWriter writer = new StreamWriter(networkStream);
-
                 // Flush its buffer to the underlying stream after every
                 // call to StreamWriter.Write.
                 writer.AutoFlush = true;
+
+                Byte[] requestByte;
+                string requestString = String.Empty;
+
                 while (true)
                 {
-                    string request = await reader.ReadLineAsync().WithCancellation(cancellationToken);
-                    OnMessageReceived(request);
-                    if (request != null)
+                    requestByte = new byte[256];
+                    await networkStream.ReadAsync(requestByte, 0, requestByte.Length).WithCancellation(cancellationToken);
+                    if (requestByte != null && requestByte.Length > 0)
                     {
                         // Notify UI that request has been received.
-                        //Request deserializedRequest = JsonConvert.DeserializeObject<Request>(request);
-                        Request deserializedRequest = JsonConvert.DeserializeObject<Request>(WrapRequest(request)); // Wraps request for compatibility
-                        OnMessageReceived($"\n\t{deserializedRequest.Command} : {deserializedRequest.Message}\n");
+                        requestString = System.Text.Encoding.ASCII.GetString(requestByte);
+                        OnMessageReceived(requestString);
 
-                        // Parse and process client request.
+                        // Parse and process client request. Wrap request for compatibility.
+                        Request deserializedRequest = JsonConvert.DeserializeObject<Request>(WrapRequest(requestString));
                         string response = processClientRequest(deserializedRequest);
-                        Console.WriteLine(response);
+
                         // Check if process has been cancelled before and after sending data.
                         cancellationToken.ThrowIfCancellationRequested();
                         await writer.WriteLineAsync(response);
                         cancellationToken.ThrowIfCancellationRequested();
 
                         // Notify UI that response has been sent.
-                        Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-                        OnMessageSent($"\n\t{deserializedResponse.Command} : {deserializedResponse.Message}");
+                        OnMessageSent(response);
                     }
                     else
                     {
@@ -190,7 +191,7 @@ namespace Server.ServerSocket
                 Console.WriteLine(ex.Message);
                 if (client.Connected)
                 {
-                    client.Close();
+                    //client.Close();
                 }
             }
         }
@@ -233,19 +234,6 @@ namespace Server.ServerSocket
             }
             return response;
         }
-
-        ///// <summary>
-        ///// Returns a JSON string built from the serialized Response class and process response.
-        ///// </summary>
-        ///// <param name="requestType"></param>
-        ///// <param name="response"></param>
-        ///// <returns></returns>
-        //public static string CreateResponse(string requestType, string response)
-        //{
-        //    Response responseObj = new Response(requestType, response);
-        //    string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(responseObj);
-        //    return jsonString;
-        //}
 
         /// <summary>
         /// Returns the value of and item in the repository given a queried key from a request.

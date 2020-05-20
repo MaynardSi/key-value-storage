@@ -22,6 +22,8 @@ namespace Client
         string IpAddress { get; }
         string PortNumber { get; }
 
+        void ShowMessage(string message);
+
         void UpdateLog(string message);
 
         void UpdateKeyValueListLog(string message);
