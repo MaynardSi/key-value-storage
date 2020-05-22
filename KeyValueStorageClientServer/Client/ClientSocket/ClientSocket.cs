@@ -139,8 +139,8 @@ namespace Client.ClientSocket
                 string responseString = String.Empty;
 
                 NetworkStream networkStream = Client.GetStream();
-                networkStream.ReadTimeout = TIMEOUT * 2;
-                networkStream.WriteTimeout = TIMEOUT * 2;
+                networkStream.ReadTimeout = TIMEOUT;
+                networkStream.WriteTimeout = TIMEOUT;
                 StreamWriter writer = new StreamWriter(networkStream);
                 writer.AutoFlush = true;
 
@@ -154,7 +154,7 @@ namespace Client.ClientSocket
 
                 responseByte = new byte[256];
                 await networkStream.ReadAsync(responseByte, 0, responseByte.Length).WithCancellation(cancellationToken);
-                responseString = System.Text.Encoding.ASCII.GetString(responseByte);
+                responseString = WrapResponse(System.Text.Encoding.ASCII.GetString(responseByte));
                 OnMessageReceived(responseString);
 
                 return responseString;
@@ -168,7 +168,7 @@ namespace Client.ClientSocket
 
         #endregion Methods
 
-        #region EventHandlers
+        #region EventRaisers
 
         protected virtual void OnClientConnectSuccess()
         {
@@ -195,6 +195,6 @@ namespace Client.ClientSocket
             MessageSent?.Invoke(this, data);
         }
 
-        #endregion EventHandlers
+        #endregion EventRaisers
     }
 }

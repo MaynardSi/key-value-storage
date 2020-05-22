@@ -1,7 +1,6 @@
-﻿using Common;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Net.Sockets;
+using static Common.MessageWrapper;
 
 namespace Client.ClientSocket
 {
@@ -105,7 +104,7 @@ namespace Client.ClientSocket
         {
             // GET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "GET", e);
-            _view.UpdateKeySearchResultLog($"[ {e} ] : [ {createResponse(response)} ]");
+            _view.UpdateKeySearchResultLog($"[ {e} ] : [ {GetResponseMessaage(response)} ]");
         }
 
         /// <summary>
@@ -117,7 +116,7 @@ namespace Client.ClientSocket
         {
             //GETALL
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "GETALL", "GETALL");
-            _view.UpdateKeyValueListLog($"{createResponse(response)}");
+            _view.UpdateKeyValueListLog($"{GetResponseMessaage(response)}");
         }
 
         /// <summary>
@@ -129,7 +128,7 @@ namespace Client.ClientSocket
         {
             // SET
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "SET", $"{e.key},{e.value}");
-            ShowMessageBox($"Response: {createResponse(response)}");
+            ShowMessageBox($"Response: {GetResponseMessaage(response)}");
         }
 
         /// <summary>
@@ -140,20 +139,7 @@ namespace Client.ClientSocket
         private async void sendPingAsync(object sender, EventArgs e)
         {
             string response = await client.SendRequest(_view.IpAddress, _view.PortNumber, "PING", "PING");
-            ShowMessageBox($"Response: {createResponse(response)}");
-        }
-
-        private string createResponse(string response)
-        {
-            try
-            {
-                Response deserializedResponse = JsonConvert.DeserializeObject<Response>(response);
-                return deserializedResponse.Message;
-            }
-            catch (Exception)
-            {
-                return "ERROR: NO RESPONSE";
-            }
+            ShowMessageBox($"Response: {GetResponseMessaage(response)}");
         }
 
         #endregion UIEvents

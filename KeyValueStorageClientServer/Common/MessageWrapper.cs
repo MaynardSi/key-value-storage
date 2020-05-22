@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace Common
@@ -28,6 +29,23 @@ namespace Common
             return request;
         }
 
+        public static string WrapResponse(string response)
+        {
+            string id;
+            string command;
+            string message = "";
+            Dictionary<string, string> responseDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(response);
+            if (responseDictionary["Id"].StartsWith("C"))
+            {
+                id = responseDictionary["Id"];
+                command = responseDictionary["Type"];
+                message = responseDictionary["Message"];
+
+                return CreateResponse(command, message);
+            }
+            return response;
+        }
+
         // Duplicated area of code because eventually response and requests may differ
 
         /// <summary>
@@ -44,7 +62,7 @@ namespace Common
         }
 
         /// <summary>
-        /// Returns a JSON string built from the serialized Response class and process response.
+        /// Returns a JSON string built from the serialized Request class and process response.
         /// </summary>
         /// <param name="requestType"></param>
         /// <param name="response"></param>
@@ -54,6 +72,24 @@ namespace Common
             Request requestObj = new Request(requestType, requestMessage);
             string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(requestObj);
             return jsonString;
+        }
+
+        /// <summary>
+        /// Returns the Message string from the associated Request/Response Json
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        public static string GetResponseMessaage(string message)
+        {
+            try
+            {
+                IMessageType deserializedResponse = JsonConvert.DeserializeObject<IMessageType>(WrapResponse(message));
+                return deserializedResponse.Message;
+            }
+            catch (Exception)
+            {
+                return "ERROR: NO RESPONSE";
+            }
         }
     }
 }
