@@ -1,34 +1,44 @@
 ﻿using System.Collections.Generic;
 
-/// <summary>
-/// Repository class for the Key Value Pair.
-/// </summary>
-public class KeyValuePairRepository
+namespace Server
 {
-    #region Constructor
-
-    public KeyValuePairRepository()
+    /// <summary>
+    /// Repository class for the Key Value Pair.
+    /// </summary>
+    public sealed class KeyValuePairRepository
     {
-        KeyValuePairs = new Dictionary<string, string>()
+        private static readonly KeyValuePairRepository instance = new KeyValuePairRepository();
+
+        #region Constructor
+
+        public KeyValuePairRepository()
         {
-            { "ExampleKey", "ExampleValue" }
-        };
+            KeyValuePairs = new Dictionary<string, string>()
+            {
+                { "ExampleKey", "ExampleValue" }
+            };
+        }
+
+        #endregion Constructor
+
+        #region Properties
+
+        public Dictionary<string, string> KeyValuePairs { get; set; }
+
+        #endregion Properties
+
+        #region Methods
+
+        public static KeyValuePairRepository GetInstance()
+        {
+            return instance;
+        }
+
+        public void AddKeyValuePair(string key, string value)
+        {
+            KeyValuePairs.Add(key, value);
+        }
+
+        #endregion Methods
     }
-
-    #endregion Constructor
-
-    #region Properties
-
-    public Dictionary<string, string> KeyValuePairs { get; set; }
-
-    #endregion Properties
-
-    #region Methods
-
-    public void AddKeyValuePair(string key, string value)
-    {
-        KeyValuePairs.Add(key, value);
-    }
-
-    #endregion Methods
 }

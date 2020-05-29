@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Client.ConnectionStatus;
 using static Common.MessageWrapper;
 
 namespace Client.ClientSocket
@@ -15,7 +16,7 @@ namespace Client.ClientSocket
     /// Socket programming references:
     /// TcpListener/TcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient?view=netcore-3.1
     /// Asynchronous: https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-client-socket-example
-    /// Multithreaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
+    /// Multi-threaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
     public class ClientSocket
     {
         #region Constants
@@ -27,7 +28,7 @@ namespace Client.ClientSocket
         #region Fields
 
         public TcpClient Client;
-        public bool IsStarted = false;
+        public bool IsStarted;
 
         private CancellationTokenSource cancellationTokenSource;
         private CancellationToken cancellationToken;
@@ -35,12 +36,6 @@ namespace Client.ClientSocket
         #endregion Fields
 
         #region Events
-
-        public event EventHandler ClientConnected;
-
-        public event EventHandler ClientDisconnected;
-
-        public event EventHandler ClientTimeout;
 
         public event EventHandler<string> MessageReceived;
 
@@ -54,7 +49,7 @@ namespace Client.ClientSocket
         /// Start the client from the UI thread.
         /// </summary>
         /// <param name="ipAddress"></param>
-        /// <param name="portString"></param>
+        /// <param name="port"></param>
         public async Task StartClientAsync(string ipAddress, string port)
         {
             // Check if TcpClient exists to avoid socket error.
@@ -88,9 +83,7 @@ namespace Client.ClientSocket
             {
                 try
                 {
-                    Client.Close();
-                    Client = null;
-                    IsStarted = false;
+                    disposeClient();
                     OnClientDisconnect();
                 }
                 catch (Exception e)
@@ -110,9 +103,7 @@ namespace Client.ClientSocket
             {
                 try
                 {
-                    Client.Close();
-                    Client = null;
-                    IsStarted = false;
+                    disposeClient();
                     OnClientTimeout();
                 }
                 catch (Exception e)
@@ -122,27 +113,26 @@ namespace Client.ClientSocket
             }
         }
 
+        private void disposeClient()
+        {
+            Client.Close();
+            Client = null;
+            IsStarted = false;
+        }
+
         /// <summary>
         /// Sends a request to send to the Server and returns the Server's response.
         /// </summary>
-        /// <param name="ipAddress"></param>
-        /// <param name="port"></param>
         /// <param name="requestType"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task<string> SendRequest(string ipAddress, string port,
-            string requestType, string message)
+        public async Task<string> SendRequest(string requestType, string message)
         {
             try
             {
-                Byte[] responseByte;
-                string responseString = String.Empty;
-
+                Byte[] responseByte = new byte[256];
                 NetworkStream networkStream = Client.GetStream();
-                networkStream.ReadTimeout = TIMEOUT;
-                networkStream.WriteTimeout = TIMEOUT;
-                StreamWriter writer = new StreamWriter(networkStream);
-                writer.AutoFlush = true;
+                StreamWriter writer = new StreamWriter(networkStream) { AutoFlush = true };
 
                 string requestData = CreateRequest(requestType, message);
 
@@ -152,9 +142,18 @@ namespace Client.ClientSocket
                 cancellationToken.ThrowIfCancellationRequested();
                 OnMessageSent(requestData);
 
-                responseByte = new byte[256];
-                await networkStream.ReadAsync(responseByte, 0, responseByte.Length).WithCancellation(cancellationToken);
-                responseString = WrapResponse(System.Text.Encoding.ASCII.GetString(responseByte));
+                // Receiving Response
+                Task timeoutTask = Task.Delay(TIMEOUT, cancellationToken);
+                Task readResponseTask =
+                    networkStream.ReadAsync(responseByte, 0, responseByte.Length, cancellationToken);
+                Task completedTask = await Task.WhenAny(timeoutTask, readResponseTask);
+                if (completedTask == timeoutTask)
+                {
+                    cancellationTokenSource?.Cancel();
+                    throw new Exception("TIMEOUT");
+                }
+
+                string responseString = WrapResponse(System.Text.Encoding.ASCII.GetString(responseByte));
                 OnMessageReceived(responseString);
 
                 return responseString;
@@ -172,17 +171,17 @@ namespace Client.ClientSocket
 
         protected virtual void OnClientConnectSuccess()
         {
-            ClientConnected?.Invoke(this, EventArgs.Empty);
+            ClientConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ClientConstants.CONNECTED);
         }
 
         protected virtual void OnClientTimeout()
         {
-            ClientTimeout?.Invoke(this, EventArgs.Empty);
+            ClientConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ClientConstants.TIMEOUT);
         }
 
         protected virtual void OnClientDisconnect()
         {
-            ClientDisconnected?.Invoke(this, EventArgs.Empty);
+            ClientConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ClientConstants.DISCONNECTED);
         }
 
         protected virtual void OnMessageReceived(string data)

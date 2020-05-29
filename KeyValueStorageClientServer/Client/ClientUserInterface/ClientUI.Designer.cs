@@ -1,4 +1,4 @@
-﻿namespace ClientApp
+﻿namespace Client.ClientUserInterface
 {
     partial class ClientUI
     {

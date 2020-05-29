@@ -1,8 +1,9 @@
-﻿using Server.ServerSocket;
+﻿using System;
+using Common;
+using Server.ConnectionStatus;
 using Server.ServerUserInterface;
-using System;
 
-namespace ServerApp
+namespace Server
 {
     /// <summary>
     /// Serves as the Presenter module that allows the Application
@@ -13,29 +14,32 @@ namespace ServerApp
         #region Fields
 
         private readonly IMainServerView _view;
-        private ServerSocket server;
+        private readonly ServerSocket.ServerSocket _server;
 
         #endregion Fields
 
         #region Constructor
 
-        public ServerUIPresenter(IMainServerView mainView, KeyValuePairRepository repository, ServerSocket serverSocket)
+        public ServerUIPresenter(IMainServerView mainView, ServerSocket.ServerSocket serverSocket)
         {
             _view = mainView;
-            server = serverSocket;
+            _server = serverSocket;
 
             // Register UI Events
             mainView.ServerStarting += startServerAsync;
             mainView.ServerEnding += stopServer;
 
             // Register Socket Events
-            serverSocket.ServerStarted += serverStarted;
-            serverSocket.ServerStopped += serverStopped;
-            serverSocket.WaitingClient += waitingClient;
             serverSocket.ClientConnected += clientConnected;
             serverSocket.ClientDisconnected += clientDisconnected;
             serverSocket.MessageReceived += messageReceived;
             serverSocket.MessageSent += messageSent;
+
+            // Subscribe to Mediator and update the Ui when the connection status has changed
+            ServerConnectionStatusMediator.GetInstance().ConnectionStatusChanged += (s, e) =>
+            {
+                OnConnectionStatusChanged(e.ConnectionStatus);
+            };
         }
 
         #endregion Constructor
@@ -63,7 +67,7 @@ namespace ServerApp
         private async void startServerAsync(object sender, EventArgs e)
         {
             AddLogMessage("Starting server...");
-            await server.StartServer(_view.IpAddress, _view.PortNumber);
+            await _server.StartServer(_view.IpAddress, _view.PortNumber);
         }
 
         /// <summary>
@@ -74,7 +78,7 @@ namespace ServerApp
         private void stopServer(object sender, EventArgs e)
         {
             AddLogMessage("Stopping server...");
-            server.StopServer();
+            _server.StopServer();
         }
 
         #endregion UIEvents
@@ -82,34 +86,32 @@ namespace ServerApp
         #region SocketEvents
 
         /// <summary>
-        /// Display to log that server successfuly started.
+        /// Called when connection status has changed.
+        /// These events are raised from the calling Socket class.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void serverStarted(object sender, EventArgs e)
+        /// <param name="status">The status.</param>
+        public void OnConnectionStatusChanged(int status)
         {
-            AddLogMessage("Server successfully started...");
-        }
+            switch (status)
+            {
+                case ConnectionStatusEnum.ServerConstants.SERVER_STOPPED:
+                    AddLogMessage("Server has shutdown...");
+                    break;
 
-        /// <summary>
-        /// Display to log that server successfuly stopped.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void serverStopped(object sender, EventArgs e)
-        {
-            // Display to UI that server successfuly stopped
-            AddLogMessage("Server has shutdown...");
-        }
+                case ConnectionStatusEnum.ServerConstants.SERVER_STARTED:
+                    AddLogMessage("Server successfully started...");
+                    break;
 
-        /// <summary>
-        /// Display to log that the server is awaiting a connection.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void waitingClient(object sender, EventArgs e)
-        {
-            AddLogMessage("Waiting for a connection... ");
+                case ConnectionStatusEnum.ServerConstants.WAITING:
+                    AddLogMessage("Waiting for a connection... ");
+                    break;
+
+                case ConnectionStatusEnum.ServerConstants.CLIENT_CONNECTED:
+                    break;
+
+                case ConnectionStatusEnum.ServerConstants.CLIENT_DISCONNECTED:
+                    break;
+            }
         }
 
         /// <summary>

@@ -8,14 +8,12 @@ namespace Common
     {
         public static string WrapRequest(string request)
         {
-            string id;
-            string command;
             string message = "";
             Dictionary<string, string> requestDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(request);
             if (requestDictionary.ContainsKey("commandID"))
             {
-                id = requestDictionary["commandID"];
-                command = requestDictionary["commandType"];
+                string id = requestDictionary["commandID"];
+                string command = requestDictionary["commandType"];
                 if (requestDictionary.ContainsKey("messageTarget"))
                 {
                     message += $"{ requestDictionary["messageTarget"] },";
@@ -31,22 +29,19 @@ namespace Common
 
         public static string WrapResponse(string response)
         {
-            string id;
-            string command;
-            string message = "";
             Dictionary<string, string> responseDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(response);
             if (responseDictionary["Id"].StartsWith("C"))
             {
-                id = responseDictionary["Id"];
-                command = responseDictionary["Type"];
-                message = responseDictionary["Message"];
+                string id = responseDictionary["Id"];
+                string command = responseDictionary["Type"];
+                string message = responseDictionary["Message"];
 
                 return CreateResponse(command, message);
             }
             return response;
         }
 
-        // Duplicated area of code because eventually response and requests may differ
+        //Duplicated area of code because eventually response and requests may differ
 
         /// <summary>
         /// Returns a JSON string built from the serialized Response class.

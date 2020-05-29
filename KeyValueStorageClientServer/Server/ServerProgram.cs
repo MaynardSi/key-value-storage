@@ -1,8 +1,8 @@
-﻿using Server.ServerSocket;
-using System;
+﻿using System;
 using System.Windows.Forms;
+using Server.ServerUserInterface;
 
-namespace ServerApp
+namespace Server
 {
     /// <summary>
     /// Main Server Program.
@@ -19,7 +19,8 @@ namespace ServerApp
             Application.SetCompatibleTextRenderingDefault(false);
 
             var mainForm = new ServerUI();
-            var presenter = new ServerUIPresenter(mainForm, new KeyValuePairRepository(), new ServerSocket());
+
+            var serverUiPresenter = new ServerUIPresenter(mainForm, new ServerSocket.ServerSocket());
 
             Application.Run(mainForm);
         }

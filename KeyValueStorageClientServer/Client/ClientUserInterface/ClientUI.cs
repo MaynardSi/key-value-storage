@@ -1,8 +1,8 @@
-﻿using Client;
-using System;
+﻿using System;
 using System.Windows.Forms;
+using Common;
 
-namespace ClientApp
+namespace Client.ClientUserInterface
 {
     public partial class ClientUI : Form, IClientFormView
     {
@@ -17,8 +17,8 @@ namespace ClientApp
 
         #region Properties
 
-        public string IpAddress { get { return ipAddressTextBox.Text as string; } }
-        public string PortNumber { get { return portTextBox.Text as string; } }
+        public string IpAddress { get { return ipAddressTextBox.Text; } }
+        public string PortNumber { get { return portTextBox.Text; } }
 
         #endregion Properties
 
@@ -60,7 +60,7 @@ namespace ClientApp
         {
             InvokeUI(() =>
             {
-                logRichTextBox.Text += $"{ message } \n";
+                logRichTextBox.Text += $"{ message }\n";
                 logRichTextBox.Refresh();
             });
         }
@@ -74,7 +74,7 @@ namespace ClientApp
             InvokeUI(() =>
             {
                 keyValuePairListBox.Text = String.Empty;
-                keyValuePairListBox.Text += $"{ message } \n";
+                keyValuePairListBox.Text += $"{ message }\n";
                 keyValuePairListBox.Refresh();
             });
         }
@@ -88,7 +88,7 @@ namespace ClientApp
             InvokeUI(() =>
             {
                 keySearchResultRichTextBox.Text = String.Empty;
-                keySearchResultRichTextBox.Text = $"{ message } \n";
+                keySearchResultRichTextBox.Text = $"{ message }\n";
                 keySearchResultRichTextBox.Refresh();
             });
         }
@@ -97,23 +97,20 @@ namespace ClientApp
         /// Updates UI form based on the client status.
         /// </summary>
         /// <param name="status"></param>
-        public void ClientStatusFormUpdate(ClientStatus status)
+        public void ClientStatusFormUpdate(int status)
         {
             switch (status)
             {
-                case ClientStatus.CONNECTED:
+                case ConnectionStatusEnum.ClientConstants.CONNECTED:
                     ClientConnectedFormUpdate();
                     break;
 
-                case ClientStatus.DISCONNECTED:
+                case ConnectionStatusEnum.ClientConstants.DISCONNECTED:
                     ClientDisconnectedFormUpdate();
                     break;
 
-                case ClientStatus.TIMEOUT:
+                case ConnectionStatusEnum.ClientConstants.TIMEOUT:
                     ClientTimeoutFormUpdate();
-                    break;
-
-                default:
                     break;
             }
         }
@@ -127,7 +124,7 @@ namespace ClientApp
             {
                 connectToggleButton.Enabled = true;
                 connectToggleButton.Checked = true;
-                connectToggleButton.Text = "Disconnect";
+                connectToggleButton.Text = @"Disconnect";
                 pingButton.Enabled = true;
                 addKeyValuePairButton.Enabled = true;
                 keySearchButton.Enabled = true;
@@ -160,7 +157,7 @@ namespace ClientApp
             {
                 connectToggleButton.Enabled = true;
                 connectToggleButton.Checked = false;
-                connectToggleButton.Text = "Connect";
+                connectToggleButton.Text = @"Connect";
                 pingButton.Enabled = false;
                 addKeyValuePairButton.Enabled = false;
                 keySearchButton.Enabled = false;
@@ -169,8 +166,8 @@ namespace ClientApp
         }
 
         /// <summary>
-        /// Thread safety implementation.
-        /// https://stackoverflow.com/questions/142003/cross-thread-operation-not-valid-control-accessed-from-a-thread-other-than-the
+        /// Safely update UI elements by returning to the UI thread
+        /// before updating elements.
         /// </summary>
         /// <param name="action"></param>
         private void InvokeUI(Action action)
@@ -189,8 +186,6 @@ namespace ClientApp
         /// <param name="e"></param>
         public void ConnectToggleButton_Click(object sender, EventArgs e)
         {
-            string ipAddress = ipAddressTextBox.Text;
-            string port = portTextBox.Text;
             InvokeUI(() =>
             {
                 if (connectToggleButton.Checked)
@@ -213,8 +208,8 @@ namespace ClientApp
         /// <param name="e"></param>
         public void KeySearchButton_Click(object sender, EventArgs e)
         {
-            string searchkey = keySearchTextBox.Text;
-            SearchKeyValuePair?.Invoke(sender, searchkey);
+            string searchKey = keySearchTextBox.Text;
+            SearchKeyValuePair?.Invoke(sender, searchKey);
         }
 
         /// <summary>
@@ -224,9 +219,9 @@ namespace ClientApp
         /// <param name="e"></param>
         public void AddKeyValuePairButton_Click(object sender, EventArgs e)
         {
-            string addkey = addKeyTextBox.Text;
+            string addKey = addKeyTextBox.Text;
             string addValue = addValueTextBox.Text;
-            AddKeyValuePair?.Invoke(sender, (addkey, addValue));
+            AddKeyValuePair?.Invoke(sender, (addKey, addValue));
         }
 
         /// <summary>

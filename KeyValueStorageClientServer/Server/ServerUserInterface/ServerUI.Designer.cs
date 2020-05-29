@@ -1,4 +1,4 @@
-﻿namespace ServerApp
+﻿namespace Server.ServerUserInterface
 {
     partial class ServerUI
     {

@@ -30,6 +30,6 @@ namespace Client
 
         void UpdateKeySearchResultLog(string message);
 
-        void ClientStatusFormUpdate(ClientStatus status);
+        void ClientStatusFormUpdate(int status);
     }
 }

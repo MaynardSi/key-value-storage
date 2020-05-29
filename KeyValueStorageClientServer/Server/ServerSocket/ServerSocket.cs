@@ -7,8 +7,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Server.ConnectionStatus;
 using static Common.MessageWrapper;
-using static Common.TaskExtension;
 
 namespace Server.ServerSocket
 {
@@ -18,7 +18,7 @@ namespace Server.ServerSocket
     /// Socket programming references:
     /// TcpListener/TcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener?redirectedfrom=MSDN&view=netcore-3.1
     /// Asynchronous: https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-server-socket-example
-    /// Multithreaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
+    /// Multi-threaded Clients: http://www.pulpfreepress.com/csharp-for-artists-2nd-edition/
     /// TcpListener.BeginAcceptTcpClient: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener.beginaccepttcpclient?view=netframework-4.8
     /// async programming tcp: https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-asynchronous-tcp-sockets-as-an-alternative-to-wcf
     public class ServerSocket
@@ -37,17 +37,11 @@ namespace Server.ServerSocket
         private CancellationTokenSource cancellationTokenSource;
         private CancellationToken cancellationToken;
 
-        private KeyValuePairRepository repository = new KeyValuePairRepository();
+        private readonly KeyValuePairRepository repository = KeyValuePairRepository.GetInstance();
 
         #endregion Fields
 
         #region Events
-
-        public event EventHandler ServerStarted;
-
-        public event EventHandler ServerStopped;
-
-        public event EventHandler WaitingClient;
 
         public event EventHandler<string> ClientConnected;
 
@@ -64,8 +58,8 @@ namespace Server.ServerSocket
         /// <summary>
         /// Create and start an instance of a TcpListener
         /// </summary>
-        /// <param name="ipAddress"></param>
-        /// <param name="port"></param>
+        /// <param name="ipAddressString"></param>
+        /// <param name="portString"></param>
         public async Task StartServer(string ipAddressString, string portString)
         {
             // Check if TcpListener exists to avoid socket error
@@ -130,7 +124,7 @@ namespace Server.ServerSocket
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception: {0}", e);
+                    Console.WriteLine($"Exception: {e}");
                 }
             }
         }
@@ -139,6 +133,9 @@ namespace Server.ServerSocket
         /// Gives the appropriate response to a client request.
         /// </summary>
         /// <param name="client"></param>
+        /// <param name="clientEndPoint"></param>
+        /// <param name="ipAddressString"></param>
+        /// <param name="portString"></param>
         /// <returns></returns>
         private async Task process(TcpClient client, string clientEndPoint, string ipAddressString, string portString)
         {
@@ -147,22 +144,29 @@ namespace Server.ServerSocket
                 NetworkStream networkStream = client.GetStream();
                 networkStream.ReadTimeout = TIMEOUT;
                 networkStream.WriteTimeout = TIMEOUT;
-                StreamWriter writer = new StreamWriter(networkStream);
+                StreamWriter writer = new StreamWriter(networkStream) { AutoFlush = true };
                 // Flush its buffer to the underlying stream after every
                 // call to StreamWriter.Write.
-                writer.AutoFlush = true;
-
-                Byte[] requestByte;
-                string requestString = String.Empty;
 
                 while (true)
                 {
-                    requestByte = new byte[256];
-                    await networkStream.ReadAsync(requestByte, 0, requestByte.Length).WithCancellation(cancellationToken);
-                    if (requestByte != null && requestByte.Length > 0)
+                    var requestByte = new byte[256];
+
+                    // Receiving request
+                    Task timeoutTask = Task.Delay(TIMEOUT, cancellationToken);
+                    Task readRequestTask =
+                        networkStream.ReadAsync(requestByte, 0, requestByte.Length, cancellationToken);
+                    Task completedTask = await Task.WhenAny(timeoutTask, readRequestTask);
+                    if (completedTask == timeoutTask)
+                    {
+                        cancellationTokenSource?.Cancel();
+                        throw new Exception("TIMEOUT");
+                    }
+
+                    if (requestByte.Length > 0)
                     {
                         // Notify UI that request has been received.
-                        requestString = System.Text.Encoding.ASCII.GetString(requestByte);
+                        string requestString = System.Text.Encoding.ASCII.GetString(requestByte);
                         OnMessageReceived(requestString);
 
                         // Parse and process client request. Wrap request for compatibility.
@@ -209,22 +213,22 @@ namespace Server.ServerSocket
             {
                 case "GET":
                     // Return KVP string
-                    response = CreateResponse(request.Command, _processClientGET(request.Message));
+                    response = CreateResponse(request.Command, processClientGET(request.Message));
                     break;
 
                 case "GETALL":
                     // Return KVP string
-                    response = CreateResponse(request.Command, _processClientGETALL(request.Message));
+                    response = CreateResponse(request.Command, processClientGETALL());
                     break;
 
                 case "SET":
                     // Store KVP in repository and return OK
-                    response = CreateResponse(request.Command, _processClientSET(request.Message));
+                    response = CreateResponse(request.Command, processClientSET(request.Message));
                     break;
 
                 case "PING":
                     // Return a response of PONG
-                    response = CreateResponse(request.Command, _processClientPING(request.Message));
+                    response = CreateResponse(request.Command, processClientPING());
                     break;
 
                 default:
@@ -240,7 +244,7 @@ namespace Server.ServerSocket
         /// </summary>
         /// <param name="keyFromMessage"></param>
         /// <returns></returns>
-        private string _processClientGET(string keyFromMessage)
+        private string processClientGET(string keyFromMessage)
         {
             if (repository.KeyValuePairs.TryGetValue(keyFromMessage, out string result))
             {
@@ -252,9 +256,8 @@ namespace Server.ServerSocket
         /// <summary>
         /// Returns the list of items in the repository.
         /// </summary>
-        /// <param name="keyFromMessage"></param>
         /// <returns></returns>
-        private string _processClientGETALL(string keyFromMessage)
+        private string processClientGETALL()
         {
             if (repository.KeyValuePairs.Count > 0)
             {
@@ -271,7 +274,7 @@ namespace Server.ServerSocket
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        private string _processClientSET(string message)
+        private string processClientSET(string message)
         {
             string[] keyValuePair = message.Split(',');
             string key = keyValuePair[0];
@@ -292,7 +295,7 @@ namespace Server.ServerSocket
         /// </summary>
         /// <param name="keyFromMessage"></param>
         /// <returns></returns>
-        private string _processClientPING(string keyFromMessage)
+        private string processClientPING()
         {
             return "PONG";
         }
@@ -303,17 +306,17 @@ namespace Server.ServerSocket
 
         protected virtual void OnServerStarted()
         {
-            ServerStarted?.Invoke(this, EventArgs.Empty);
+            ServerConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ServerConstants.SERVER_STARTED);
         }
 
         protected virtual void OnServerStopped()
         {
-            ServerStopped?.Invoke(this, EventArgs.Empty);
+            ServerConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ServerConstants.SERVER_STOPPED);
         }
 
         protected virtual void OnWaitingClient()
         {
-            WaitingClient?.Invoke(this, EventArgs.Empty);
+            ServerConnectionStatusMediator.GetInstance().OnStatusChanged(this, ConnectionStatusEnum.ServerConstants.WAITING);
         }
 
         protected virtual void OnClientConnected(string clientInfo)

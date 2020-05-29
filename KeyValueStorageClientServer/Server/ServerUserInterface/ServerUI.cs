@@ -1,8 +1,7 @@
-﻿using Server.ServerUserInterface;
-using System;
+﻿using System;
 using System.Windows.Forms;
 
-namespace ServerApp
+namespace Server.ServerUserInterface
 {
     public partial class ServerUI : Form, IMainServerView
     {
@@ -17,8 +16,8 @@ namespace ServerApp
 
         #region Fields
 
-        public string IpAddress { get { return ipAddressTextBox.Text as string; } }
-        public string PortNumber { get { return portTextBox.Text as string; } }
+        public string IpAddress { get { return ipAddressTextBox.Text; } }
+        public string PortNumber { get { return portTextBox.Text; } }
 
         #endregion Fields
 

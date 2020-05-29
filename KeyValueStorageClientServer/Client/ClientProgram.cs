@@ -1,6 +1,8 @@
 ﻿using Client.ClientSocket;
 using System;
 using System.Windows.Forms;
+using Client;
+using Client.ClientUserInterface;
 
 namespace ClientApp
 {
@@ -19,7 +21,7 @@ namespace ClientApp
             Application.SetCompatibleTextRenderingDefault(false);
 
             var mainForm = new ClientUI();
-            var presenter = new ClientUIPresenter(mainForm, new ClientSocket());
+            new ClientUIPresenter(mainForm, new ClientSocket());
 
             Application.Run(mainForm);
         }

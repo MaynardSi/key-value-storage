@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConnectionStatus\ServerConnectionStatusMediator.cs" />
     <Compile Include="KeyValuePairRepository.cs" />
     <Compile Include="ServerSocket\ServerSocket.cs" />
     <Compile Include="ServerUIPresenter.cs" />
